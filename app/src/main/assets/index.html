@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SeriesQuiz - El Quiz de Series</title>
+<style>
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #12071f;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.stars {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at bottom, #2a1145 0%, #08030f 100%);
+}
+
+.game-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+    padding: 15px;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.menu-screen { text-align: center; }
+.menu-screen h1 {
+    font-family: 'Courier New', monospace;
+    font-size: 2.5em;
+    background: linear-gradient(180deg, #00e5ff, #7c4dff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    margin-bottom: 5px;
+}
+.menu-screen .subtitle { color: #888; font-size: 0.9em; margin-bottom: 10px; }
+.menu-logo {
+    width: 120px; height: 120px; margin: 0 auto 15px;
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 3em; box-shadow: 0 0 40px rgba(124,77,255,0.4);
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 40px rgba(124,77,255,0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(124,77,255,0.6); }
+}
+.btn {
+    display: block; width: 100%; padding: 15px; margin: 10px 0;
+    border: none; border-radius: 12px; font-size: 1.1em; font-weight: bold;
+    cursor: pointer; transition: all 0.3s;
+}
+.btn:hover { transform: scale(1.02); }
+.btn:active { transform: scale(0.98); }
+.btn-play {
+    background: linear-gradient(135deg, #00e5ff, #7c4dff);
+    color: #12071f; font-size: 1.3em; box-shadow: 0 4px 20px rgba(124,77,255,0.35);
+}
+.btn-categories { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+.btn-leaderboard { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+
+.category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cat-btn {
+    padding: 20px 10px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px;
+    background: rgba(255,255,255,0.05); color: white; text-align: center;
+    cursor: pointer; transition: all 0.3s; font-size: 0.9em;
+}
+.cat-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+.cat-btn:active { transform: scale(0.95); }
+.cat-btn .emoji { font-size: 2em; display: block; margin-bottom: 5px; }
+.cat-btn.selected {
+    border-color: #00e5ff;
+    background: linear-gradient(135deg, rgba(0,229,255,0.2), rgba(124,77,255,0.2));
+}
+
+.game-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; padding: 10px 15px; background: rgba(255,255,255,0.05); border-radius: 12px;
+}
+.game-header .question-num { color: #00e5ff; font-weight: bold; }
+.game-header .score { color: #00e5ff; font-family: 'Courier New', monospace; font-size: 1.2em; }
+
+.question-box {
+    background: rgba(255,255,255,0.08); border-radius: 16px; padding: 25px; margin-bottom: 15px;
+    min-height: 120px; display: flex; align-items: center; justify-content: center;
+    text-align: center; border: 1px solid rgba(124,77,255,0.25);
+}
+.question-box p { color: white; font-size: 1.15em; line-height: 1.5; }
+
+.options-grid { display: grid; gap: 10px; }
+.option-btn {
+    padding: 15px; border: 2px solid rgba(255,255,255,0.15); border-radius: 12px;
+    background: rgba(255,255,255,0.05); color: white; text-align: left;
+    cursor: pointer; transition: all 0.3s; font-size: 1em; display: flex; align-items: center;
+}
+.option-btn .letter {
+    display: inline-flex; width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); align-items: center; justify-content: center;
+    margin-right: 12px; font-weight: bold; flex-shrink: 0;
+}
+.option-btn:hover { background: rgba(255,255,255,0.15); }
+.option-btn.correct { border-color: #00e676; background: rgba(0,230,118,0.2); animation: flashGreen 0.5s; }
+.option-btn.wrong { border-color: #ff1744; background: rgba(255,23,68,0.2); animation: flashRed 0.5s; }
+@keyframes flashGreen { 0%,100%{background:rgba(0,230,118,0.2)} 50%{background:rgba(0,230,118,0.4)} }
+@keyframes flashRed { 0%,100%{background:rgba(255,23,68,0.2)} 50%{background:rgba(255,23,68,0.4)} }
+.option-btn:disabled { cursor: default; opacity: 0.7; }
+
+.lifelines { display: flex; gap: 10px; margin: 10px 0; justify-content: center; }
+.lifeline-btn {
+    padding: 8px 16px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
+    background: rgba(255,255,255,0.05); color: #aaa; cursor: pointer; font-size: 0.85em; transition: all 0.3s;
+}
+.lifeline-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+.lifeline-btn.used { opacity: 0.3; cursor: default; }
+
+.result-screen { text-align: center; }
+.result-screen .result-icon { font-size: 4em; margin-bottom: 15px; }
+.result-screen h2 { color: white; font-size: 1.8em; margin-bottom: 10px; }
+.result-screen p { color: #aaa; font-size: 1.1em; margin-bottom: 5px; }
+.result-screen .final-score { font-family: 'Courier New', monospace; font-size: 3em; color: #00e5ff; margin: 15px 0; }
+
+.prize-ladder {
+    position: fixed; right: 10px; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.8); border-radius: 10px; padding: 8px; font-size: 0.7em; z-index: 10;
+}
+.prize-step { padding: 3px 10px; margin: 2px 0; border-radius: 4px; color: #666; text-align: right; }
+.prize-step.current { color: #00e5ff; background: rgba(0,229,255,0.15); }
+.prize-step.milestone { color: #7c4dff; }
+
+@media (max-width: 400px) {
+    .menu-screen h1 { font-size: 1.8em; }
+    .question-box p { font-size: 1em; }
+    .prize-ladder { display: none; }
+}
+
+.modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+    background: linear-gradient(160deg, #2a1145, #12071f); border: 2px solid #00e5ff;
+    border-radius: 16px; padding: 25px; max-width: 380px; width: 85%; box-shadow: 0 0 40px rgba(0,229,255,0.25);
+}
+.modal-box h3 { color: #00e5ff; margin-bottom: 12px; font-size: 1.2em; }
+.modal-box .modal-content { color: white; font-size: 1em; line-height: 1.5; margin-bottom: 18px; }
+.modal-bar-row { display: flex; align-items: center; margin: 6px 0; font-size: 0.9em; color: #ccc; }
+.modal-bar-label { width: 30px; flex-shrink: 0; }
+.modal-bar-track {
+    flex: 1; background: rgba(255,255,255,0.1); border-radius: 6px; height: 16px; overflow: hidden; margin: 0 8px;
+}
+.modal-bar-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); }
+.modal-box .btn { margin: 0; }
+
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="game-container">
+
+<!-- MENU -->
+<div id="menuScreen" class="screen active menu-screen">
+    <div class="menu-logo">📺</div>
+    <h1>SERIESQUIZ</h1>
+    <div class="subtitle">🎬 El Quiz de Series y Anime</div>
+    <button class="btn btn-play" onclick="showCategories()">🎯 JUGAR</button>
+    <button class="btn btn-categories" onclick="showCategories()">📂 CATEGORÍAS</button>
+    <button class="btn" style="background:linear-gradient(135deg,#00c9a7,#0089ba);color:white" onclick="showCustomGame()">🤖 BUSCAR SERIE (IA)</button>
+</div>
+
+<!-- CATEGORIES -->
+<div id="catScreen" class="screen">
+    <div class="menu-screen" style="padding-top:20px">
+        <h2 style="color:white;margin-bottom:15px;font-size:1.2em">ELEGÍ TU CATEGORÍA</h2>
+        <div class="category-grid">
+            <div class="cat-btn selected" data-cat="all" onclick="selectCategory('all',this)"><span class="emoji">📺</span> Todas</div>
+            <div class="cat-btn" data-cat="accion" onclick="selectCategory('accion',this)"><span class="emoji">🔫</span> Acción</div>
+            <div class="cat-btn" data-cat="infantil" onclick="selectCategory('infantil',this)"><span class="emoji">🧸</span> Infantil</div>
+            <div class="cat-btn" data-cat="terror" onclick="selectCategory('terror',this)"><span class="emoji">👻</span> Terror</div>
+            <div class="cat-btn" data-cat="anime" onclick="selectCategory('anime',this)"><span class="emoji">🎌</span> Anime</div>
+            <div class="cat-btn" data-cat="comedia" onclick="selectCategory('comedia',this)"><span class="emoji">😂</span> Comedia</div>
+            <div class="cat-btn" data-cat="drama" onclick="selectCategory('drama',this)"><span class="emoji">🎭</span> Drama</div>
+            <div class="cat-btn" data-cat="dorama" onclick="selectCategory('dorama',this)"><span class="emoji">🇰🇷</span> Dorama</div>
+            <div class="cat-btn" data-cat="documentales" onclick="selectCategory('documentales',this)"><span class="emoji">🎥</span> Documentales</div>
+            <div class="cat-btn" data-cat="cristianas" onclick="selectCategory('cristianas',this)"><span class="emoji">✝️</span> Cristianas</div>
+            <div class="cat-btn" data-cat="mas_vistas" onclick="selectCategory('mas_vistas',this)"><span class="emoji">🔥</span> Más Vistas</div>
+        </div>
+        <button class="btn btn-play" onclick="startGame()" style="margin-top:15px">✅ EMPEZAR</button>
+        <button class="btn" style="background:linear-gradient(135deg,#00c9a7,#0089ba);color:white" onclick="generateFreshGenre()">🎲 GENERAR 30 NUEVAS (IA)</button>
+        <button class="btn btn-categories" onclick="showMenu()" style="background:#333">↩ VOLVER</button>
+        <div id="catStatus" style="color:#00e5ff;margin-top:12px;font-size:0.85em;min-height:20px"></div>
+    </div>
+</div>
+
+<!-- CUSTOM GAME (preguntas generadas por IA para una serie especifica) -->
+<div id="customScreen" class="screen">
+    <div class="menu-screen" style="padding-top:30px">
+        <h2 style="color:white;margin-bottom:10px;font-size:1.2em">¿QUÉ SERIE QUERÉS JUGAR?</h2>
+        <p style="color:#888;font-size:0.85em;margin-bottom:15px">Escribí cualquier serie o anime y generamos 30 preguntas sobre ella</p>
+        <input type="text" id="customGameInput" placeholder="Ej: Stranger Things"
+            onfocus="setTimeout(() => this.scrollIntoView({block:'center', behavior:'smooth'}), 300)"
+            style="width:100%;padding:15px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;font-size:1em;margin-bottom:15px;text-align:center;box-sizing:border-box">
+        <button class="btn btn-play" id="customSearchBtn" onclick="searchCustomGame()">🔍 BUSCAR PREGUNTAS</button>
+        <button class="btn btn-categories" onclick="showMenu()" style="background:#333">↩ VOLVER</button>
+        <div id="customStatus" style="color:#00e5ff;margin-top:15px;font-size:0.9em;min-height:20px"></div>
+    </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+    <div class="prize-ladder" id="prizeLadder"></div>
+    <div class="game-header">
+        <span class="question-num" id="questionNum">Pregunta 1/15</span>
+        <span class="score" id="scoreDisplay">$0</span>
+    </div>
+    <div id="categoryDisplay" style="color:#888;font-size:0.85em;text-align:center;margin-bottom:8px"></div>
+    <div class="question-box"><p id="questionText">Cargando...</p></div>
+    <div class="options-grid" id="optionsContainer"></div>
+    <div class="lifelines">
+        <button class="lifeline-btn" id="fiftyBtn" onclick="useFifty()">50/50</button>
+        <button class="lifeline-btn" id="phoneBtn" onclick="usePhone()">📞 Llamada</button>
+        <button class="lifeline-btn" id="audienceBtn" onclick="useAudience()">👥 Público</button>
+    </div>
+</div>
+
+<!-- RESULT -->
+<div id="resultScreen" class="screen result-screen">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <h2 id="resultTitle">¡Felicitaciones!</h2>
+    <p id="resultSubtitle">Ganaste:</p>
+    <div class="final-score" id="finalScore">$1.000.000</div>
+    <p id="resultDetail"></p>
+    <button class="btn btn-play" onclick="showMenu()">🔄 JUGAR DE NUEVO</button>
+</div>
+
+</div>
+
+<!-- MODAL (reemplaza alert(), que el WebView no muestra) -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+        <h3 id="modalTitle"></h3>
+        <div class="modal-content" id="modalContent"></div>
+        <button class="btn btn-play" onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<script>try{
+
+// ─── PRIZE LADDER ───
+const PRIZES = [
+    '$100', '$200', '$300', '$500', '$1.000',
+    '$2.000', '$4.000', '$8.000', '$16.000', '$32.000',
+    '$64.000', '$125.000', '$250.000', '$500.000', '$1.000.000'
+];
+const MILESTONES = [4, 9, 14];
+
+// ─── QUESTIONS DATABASE (300 preguntas, 10 categorias x 30) ───
+const QUESTIONS = [
+{"cat": "accion", "q": "¿En qué año se estrenó la serie '24'?", "o": ["1999", "2001", "2003", "2005"], "c": 1},
+{"cat": "accion", "q": "¿Qué actor interpreta a Jack Bauer en '24'?", "o": ["Kiefer Sutherland", "Tommy Lee Jones", "Harrison Ford", "Liam Neeson"], "c": 0},
+{"cat": "accion", "q": "¿Cómo se llama el equipo de operaciones especiales en 'The Unit'?", "o": ["Delta Force", "SEAL Team 6", "The Unit", "Green Berets"], "c": 2},
+{"cat": "accion", "q": "¿Cuántas temporadas tiene la serie 'Prison Break' original?", "o": ["3", "4", "5", "6"], "c": 1},
+{"cat": "accion", "q": "¿Quién es el creador de 'Breaking Bad'?", "o": ["David Chase", "Vince Gilligan", "Matthew Weiner", "Aaron Sorkin"], "c": 1},
+{"cat": "accion", "q": "En 'Breaking Bad', ¿cuál es el nombre del cuñado de Walter White?", "o": ["Mike Ehrmantraut", "Gustavo Fring", "Hank Schrader", "Saul Goodman"], "c": 2},
+{"cat": "accion", "q": "¿Qué serie de acción sigue a un equipo SWAT de Los Ángeles?", "o": ["The Rookie", "SWAT", "Chicago P.D.", "Third Watch"], "c": 1},
+{"cat": "accion", "q": "¿En qué ciudad transcurre la mayor parte de 'The Wire'?", "o": ["Nueva York", "Chicago", "Baltimore", "Filadelfia"], "c": 2},
+{"cat": "accion", "q": "¿Qué actor interpreta a Ray Donovan?", "o": ["Jon Voight", "Liev Schreiber", "Eddie Marsan", "James Woods"], "c": 1},
+{"cat": "accion", "q": "¿Cuál es el nombre del personaje principal de 'Person of Interest'?", "o": ["John Reese", "Harold Finch", "Lionel Fusco", "Carter"], "c": 0},
+{"cat": "accion", "q": "¿Qué serie de acción militar sigue a un equipo de Navy SEALs?", "o": ["SEAL Team", "The Last Ship", "Six", "Strike Back"], "c": 0},
+{"cat": "accion", "q": "¿Cuántos episodios tiene la primera temporada de '24'?", "o": ["22", "24", "26", "20"], "c": 1},
+{"cat": "accion", "q": "¿Qué actor interpreta a Dexter Morgan en 'Dexter'?", "o": ["Michael C. Hall", "John Lithgow", "David Zayas", "James Remar"], "c": 0},
+{"cat": "accion", "q": "¿En qué año se estrenó 'The Shield'?", "o": ["2000", "2002", "2004", "2006"], "c": 1},
+{"cat": "accion", "q": "¿Cómo se llama el grupo criminal en 'Sons of Anarchy'?", "o": ["Los Bastards", "SAMCRO", "The Mayans", "The Grim Bastards"], "c": 1},
+{"cat": "accion", "q": "¿Qué serie de acción sigue a un grupo de agentes del FBI en Los Ángeles?", "o": ["The Blacklist", "Quantico", "Criminal Minds", "The FBI"], "c": 3},
+{"cat": "accion", "q": "¿Quién interpreta a John Wick en la serie derivada 'The Continental'?", "o": ["Keanu Reeves", "Ian McShane", "Mel Gibson", "Colin Woodell"], "c": 3},
+{"cat": "accion", "q": "¿Cuál es el nombre del protagonista de 'Banshee'?", "o": ["Lucas Hood", "Kai Proctor", "Sugar Bates", "Job"], "c": 0},
+{"cat": "accion", "q": "¿Qué serie de acción está basada en la película 'Lethal Weapon'?", "o": ["Lethal Weapon", "The A-Team", "Magnum P.I.", "Hawaii Five-0"], "c": 0},
+{"cat": "accion", "q": "¿Cuántas temporadas tiene 'Justified'?", "o": ["5", "6", "7", "8"], "c": 1},
+{"cat": "accion", "q": "¿Qué actor interpreta a Raylan Givens en 'Justified'?", "o": ["Timothy Olyphant", "Walton Goggins", "Nick Searcy", "Jere Burns"], "c": 0},
+{"cat": "accion", "q": "¿En qué serie aparece el personaje de Frankie Morales?", "o": ["The Terminal List", "Reacher", "Jack Ryan", "The Punisher"], "c": 2},
+{"cat": "accion", "q": "¿Cómo se llama el barco en 'The Last Ship'?", "o": ["USS Nathan James", "USS Enterprise", "USS Ronald Reagan", "USS Missouri"], "c": 0},
+{"cat": "accion", "q": "¿Qué actor interpreta a Jason Hayes en 'SEAL Team'?", "o": ["David Boreanaz", "Max Thieriot", "Neil Brown Jr.", "A.J. Buckley"], "c": 0},
+{"cat": "accion", "q": "¿Cuál es el nombre del antagonista principal en '24' temporada 1?", "o": ["Nina Myers", "Victor Drazen", "Sherry Palmer", "Mandy"], "c": 1},
+{"cat": "accion", "q": "¿Qué serie de acción sigue a un exconvicto que se convierte en agente del FBI?", "o": ["White Collar", "Burn Notice", "The Blacklist", "White Heat"], "c": 2},
+{"cat": "accion", "q": "¿En qué año se estrenó 'Strike Back'?", "o": ["2008", "2010", "2012", "2014"], "c": 1},
+{"cat": "accion", "q": "¿Qué actor interpreta a Michael Scofield en 'Prison Break'?", "o": ["Wentworth Miller", "Dominic Purcell", "Amaury Nolasco", "Robert Knepper"], "c": 0},
+{"cat": "accion", "q": "¿Cuál es el nombre del equipo en 'The A-Team'?", "o": ["Alpha Squad", "The A-Team", "Team Bravo", "Delta Force"], "c": 1},
+{"cat": "accion", "q": "¿Qué serie de acción tiene un episodio famoso grabado en tiempo real?", "o": ["24", "The Shield", "Prison Break", "Breaking Bad"], "c": 0},
+{"cat": "infantil", "q": "¿En qué año se estrenó 'Los Simpson' como serie independiente?", "o": ["1987", "1989", "1991", "1990"], "c": 1},
+{"cat": "infantil", "q": "¿Cuál es el nombre del pueblo donde viven los personajes de 'Bob Esponja'?", "o": ["Fondo de Bikini", "Ciudad Sirena", "Arrecife de Coral", "Isla Calamardo"], "c": 0},
+{"cat": "infantil", "q": "En 'Phineas y Ferb', ¿cuál es el nombre del ornitorrinco mascota?", "o": ["Perry", "Jerry", "Terry", "Barry"], "c": 0},
+{"cat": "infantil", "q": "¿Qué serie infantil de los 90s presentaba a dos hermanos gemelos que viven en una mansión embrujada?", "o": ["Los misterios de Shelby Woo", "La familia Addams", "Los gemelos fantasma", "Mary-Kate y Ashley"], "c": 2},
+{"cat": "infantil", "q": "En 'Dora la Exploradora', ¿cómo se llama el mono que la acompaña?", "o": ["Botas", "Mapa", "Mochila", "Tico"], "c": 0},
+{"cat": "infantil", "q": "¿Cuántos hijos tienen Marge y Homero Simpson?", "o": ["2", "3", "4", "5"], "c": 1},
+{"cat": "infantil", "q": "En 'Peppa Pig', ¿cómo se llama el hermano pequeño de Peppa?", "o": ["George", "Richard", "Tom", "Fred"], "c": 0},
+{"cat": "infantil", "q": "¿Qué serie de Nickelodeon sigue las aventuras de un niño inventor de 10 años?", "o": ["Jimmy Neutrón", "Phineas y Ferb", "El laboratorio de Dexter", "Las aventuras de Jimmy"], "c": 0},
+{"cat": "infantil", "q": "En 'Pocoyó', ¿cuál es el animal que siempre tiene sueño y se llama Pato?", "o": ["Pato", "Elly", "Loula", "Pocoyó"], "c": 0},
+{"cat": "infantil", "q": "¿Cuál es el color favorito de Caillou?", "o": ["Rojo", "Azul", "Verde", "Amarillo"], "c": 1},
+{"cat": "infantil", "q": "En 'El Chavo del Ocho' (serie infantil mexicana), ¿cómo se llama el personaje que vive en el barril?", "o": ["Quico", "Ñoño", "El Chavo", "Godínez"], "c": 2},
+{"cat": "infantil", "q": "¿Qué serie animada de Disney Channel presenta a una familia de superhéroes con poderes increíbles?", "o": ["Los Increíbles", "Phineas y Ferb", "La casa de Mickey Mouse", "Los padrinos mágicos"], "c": 0},
+{"cat": "infantil", "q": "En 'La casa de Mickey Mouse', ¿cómo se llama el perro de Mickey?", "o": ["Pluto", "Goofy", "Daisy", "Donald"], "c": 0},
+{"cat": "infantil", "q": "¿Cuál es el nombre del científico loco en 'El laboratorio de Dexter'?", "o": ["Dexter", "Mandark", "Dee Dee", "Padre"], "c": 1},
+{"cat": "infantil", "q": "En 'Paw Patrol', ¿cuál es el nombre del cachorro que usa un helicóptero?", "o": ["Skye", "Chase", "Marshall", "Rubble"], "c": 0},
+{"cat": "infantil", "q": "¿Qué serie familiar muestra a una niña que viaja a través de un armario a Narnia?", "o": ["Las crónicas de Narnia", "La bruja y el león", "El armario mágico", "Narnia: el león, la bruja y el armario"], "c": 3},
+{"cat": "infantil", "q": "En 'Arthur' (serie infantil), ¿qué animal es el protagonista?", "o": ["Oso hormiguero", "Perro", "Gato", "Conejo"], "c": 0},
+{"cat": "infantil", "q": "¿Cuántas temporadas tuvo 'Avatar: La leyenda de Aang'?", "o": ["2", "3", "4", "5"], "c": 1},
+{"cat": "infantil", "q": "En 'Ben 10', ¿cuántos aliens diferentes puede transformarse originalmente Ben?", "o": ["10", "12", "15", "20"], "c": 0},
+{"cat": "infantil", "q": "¿Qué serie de Disney Junior presenta a una princesa que cuida animales en un castillo encantado?", "o": ["Sofía la Princesa", "Elena de Ávalor", "La princesa y el sapo", "Blancanieves"], "c": 0},
+{"cat": "infantil", "q": "En 'Los padrinos mágicos', ¿cómo se llama el hada madrina principal de Timmy?", "o": ["Wanda", "Cosmo", "Jorgen", "Poof"], "c": 0},
+{"cat": "infantil", "q": "¿Cuál es el nombre del pueblo en 'La pantera rosa' (serie clásica)?", "o": ["No tiene pueblo fijo", "Pinkville", "Pueblo Rosa", "Ciudad Rosa"], "c": 0},
+{"cat": "infantil", "q": "En 'El mundo de Barney', ¿qué dinosaurio es Barney?", "o": ["Tiranosaurio Rex", "Triceratops", "Brontosaurio", "Estegosaurio"], "c": 2},
+{"cat": "infantil", "q": "¿Qué serie infantil de los 2000s presentaba a un niño que podía hablar con los animales gracias a un anillo?", "o": ["Las pistas de Blue", "El reino de los animales", "El mundo de Todd", "Los hermanos Koala"], "c": 0},
+{"cat": "infantil", "q": "En 'Las pistas de Blue', ¿cómo se llama el perro azul?", "o": ["Blue", "Magenta", "Perrito", "Azul"], "c": 0},
+{"cat": "infantil", "q": "¿Cuál es el nombre del villano principal en 'Bob Esponja'?", "o": ["Calamardo", "Don Cangrejo", "Plankton", "Arenita"], "c": 2},
+{"cat": "infantil", "q": "En 'Masha y el Oso', ¿qué animal es Masha?", "o": ["Oso", "Niña", "Conejo", "Gato"], "c": 1},
+{"cat": "infantil", "q": "¿Qué serie de Cartoon Network presenta a tres hermanas brujas adolescentes?", "o": ["Las chicas superpoderosas", "Scooby-Doo", "Las brujas de Eastwick", "Hex Girls"], "c": 0},
+{"cat": "infantil", "q": "En 'Dragon Ball Z' (considerada serie familiar en occidente), ¿cuál es el nombre del hijo de Goku?", "o": ["Gohan", "Goten", "Trunks", "Vegeta"], "c": 0},
+{"cat": "infantil", "q": "¿Qué serie infantil de PBS Kids enseña matemáticas con un personaje que vive en un castillo numérico?", "o": ["Peg+Gato", "El mundo de números", "Matemáticas con Mimi", "Los números locos"], "c": 0},
+{"cat": "terror", "q": "¿Quién interpreta al personaje principal, Paul, en la serie 'The Leftovers' (Los Elegidos)?", "o": ["Justin Theroux", "Mark Ruffalo", "James Franco", "Joaquin Phoenix"], "c": 0},
+{"cat": "terror", "q": "¿En qué año se estrenó la primera temporada de 'American Horror Story'?", "o": ["2010", "2011", "2012", "2009"], "c": 1},
+{"cat": "terror", "q": "¿Cómo se llama el hotel maldito de la temporada 5 de 'American Horror Story'?", "o": ["Hotel Cortez", "Hotel Overlook", "Hotel Cecil", "Hotel Transylvania"], "c": 0},
+{"cat": "terror", "q": "¿Qué actor interpreta a Hannibal Lecter en la serie 'Hannibal'?", "o": ["Mads Mikkelsen", "Anthony Hopkins", "Hugh Dancy", "Gaspard Ulliel"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del pueblo donde ocurren los eventos de 'The Haunting of Hill House'?", "o": ["Hill House", "Bly Manor", "Crimson Lane", "Arlington"], "c": 0},
+{"cat": "terror", "q": "¿En 'Stranger Things', cuál es el nombre real de Eleven?", "o": ["Jane Hopper", "Eleven Ives", "Sarah Hopper", "Kali Prasad"], "c": 0},
+{"cat": "terror", "q": "¿Qué serie de terror de Netflix está basada en la obra de Shirley Jackson?", "o": ["The Haunting of Hill House", "The Haunting of Bly Manor", "Midnight Mass", "The Fall of the House of Usher"], "c": 0},
+{"cat": "terror", "q": "¿Cuántas temporadas tiene la serie 'The Walking Dead' (hasta su final en 2022)?", "o": ["10", "11", "12", "9"], "c": 1},
+{"cat": "terror", "q": "¿Cómo se llama el antagonista principal de 'The Following'?", "o": ["Joe Carroll", "Paul Torres", "Ryan Hardy", "Mike Weston"], "c": 0},
+{"cat": "terror", "q": "¿En 'Penny Dreadful', qué personaje interpreta Eva Green?", "o": ["Vanessa Ives", "Lily Frankenstein", "Ethan Chandler", "Brona Croft"], "c": 0},
+{"cat": "terror", "q": "¿Qué serie de terror de Mike Flanagan se desarrolla en una isla remota?", "o": ["Midnight Mass", "The Haunting of Hill House", "The Haunting of Bly Manor", "The Fall of the House of Usher"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del monstruo principal en la primera temporada de 'Stranger Things'?", "o": ["Demogorgon", "Mind Flayer", "Vecna", "Thessalhydra"], "c": 0},
+{"cat": "terror", "q": "¿En 'Bates Motel', quién interpreta a Norma Bates?", "o": ["Vera Farmiga", "Julianne Moore", "Olivia Cooke", "Freddie Highmore"], "c": 0},
+{"cat": "terror", "q": "¿Qué serie de suspenso protagoniza Hugh Laurie como un psiquiatra?", "o": ["Chance", "House", "The Night Manager", "The Orphanage"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del demonio en 'The Exorcist' (serie de TV)?", "o": ["Pazuzu", "Reagan", "Marcus Keane", "Father Tomas"], "c": 0},
+{"cat": "terror", "q": "¿En 'Slasher', cuál es el nombre de la primera temporada?", "o": ["The Executioner", "Guilty Party", "Solstice", "Flesh & Blood"], "c": 0},
+{"cat": "terror", "q": "¿Qué actor interpreta a Dale Cooper en 'Twin Peaks'?", "o": ["Kyle MacLachlan", "David Lynch", "Miguel Ferrer", "Ray Wise"], "c": 0},
+{"cat": "terror", "q": "¿En 'The Terror', la primera temporada se centra en qué famosa expedición?", "o": ["Expedición Franklin", "Expedición Shackleton", "Expedición Amundsen", "Expedición Scott"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del libro que escribe el personaje de Kevin Bacon en 'The Following'?", "o": ["The Edge of the World", "The Last Victim", "The Final Cut", "The Dark Passenger"], "c": 1},
+{"cat": "terror", "q": "¿En 'Marianne' (serie francesa), cómo se llama la bruja que atormenta al pueblo?", "o": ["Marianne", "Emma", "Lydia", "Daenerys"], "c": 0},
+{"cat": "terror", "q": "¿Qué serie de terror de 2020 está basada en una novela de Henry James?", "o": ["The Haunting of Bly Manor", "The Haunting of Hill House", "Midnight Mass", "The Turn of the Screw"], "c": 0},
+{"cat": "terror", "q": "¿En 'Channel Zero', la primera temporada se inspira en qué creepypasta?", "o": ["Candle Cove", "The No-End House", "Butcher's Block", "Dream Door"], "c": 0},
+{"cat": "terror", "q": "¿Cómo se llama el asesino en serie de la serie 'Dexter'?", "o": ["Dexter Morgan", "Brian Moser", "Lila Tournay", "James Doakes"], "c": 0},
+{"cat": "terror", "q": "¿En 'Ash vs Evil Dead', quién interpreta a Ash Williams?", "o": ["Bruce Campbell", "Sam Raimi", "Robert Englund", "Kurt Russell"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del personaje de Jessica Biel en 'The Sinner'?", "o": ["Cora Tannetti", "Cora Smith", "Megan Abbott", "Vera"], "c": 0},
+{"cat": "terror", "q": "¿En 'The Fall of the House of Usher', qué personaje interpreta Mark Hamill?", "o": ["Arthur Pym", "Roderick Usher", "Madeline Usher", "Frederick Usher"], "c": 0},
+{"cat": "terror", "q": "¿Qué serie de terror de HBO presenta a un personaje llamado 'The Man in Black'?", "o": ["Westworld", "The Leftovers", "True Detective", "The Outsider"], "c": 0},
+{"cat": "terror", "q": "¿En 'The Outsider', basada en Stephen King, qué criatura persigue al detective?", "o": ["El hombre de la capucha", "El coco", "El payaso Pennywise", "Gage Creed"], "c": 0},
+{"cat": "terror", "q": "¿Cuál es el nombre del instituto psiquiátrico en 'American Horror Story: Asylum'?", "o": ["Briarcliff Manor", "St. Mary's", "Rosenheim", "Arkham"], "c": 0},
+{"cat": "terror", "q": "¿En 'The Walking Dead', cómo se llama el hijo de Rick Grimes?", "o": ["Carl", "Daryl", "Glenn", "Morgan"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del protagonista de 'Fullmetal Alchemist: Brotherhood'?", "o": ["Edward Elric", "Alphonse Elric", "Roy Mustang", "Van Hohenheim"], "c": 0},
+{"cat": "anime", "q": "¿Qué organización cazan los personajes principales en 'Attack on Titan'?", "o": ["Titanes", "Demonios", "Piratas", "Vampiros"], "c": 0},
+{"cat": "anime", "q": "¿Cuántas temporadas tiene 'Death Note' en su serie anime original?", "o": ["1", "2", "3", "4"], "c": 0},
+{"cat": "anime", "q": "¿Cómo se llama el barco pirata de Monkey D. Luffy en 'One Piece'?", "o": ["Going Merry", "Thousand Sunny", "Red Force", "Moby Dick"], "c": 0},
+{"cat": "anime", "q": "¿Qué objeto especial posee Naruto Uzumaki dentro de su cuerpo?", "o": ["El Zorro de Nueve Colas", "El Sharingan", "El Byakugan", "El Rinnegan"], "c": 0},
+{"cat": "anime", "q": "¿En qué año se emitió el primer episodio de 'Cowboy Bebop'?", "o": ["1998", "1997", "1999", "2000"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el verdadero nombre de L en 'Death Note'?", "o": ["L Lawliet", "Near River", "Mello Jeeves", "Watari"], "c": 0},
+{"cat": "anime", "q": "¿Qué personaje de 'Attack on Titan' posee el Titán Acorazado?", "o": ["Reiner Braun", "Bertholdt Hoover", "Eren Yeager", "Zeke Yeager"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del hermano menor de Edward Elric?", "o": ["Alphonse Elric", "Van Hohenheim", "Roy Mustang", "Maes Hughes"], "c": 0},
+{"cat": "anime", "q": "¿En 'One Piece', qué tipo de fruta del diablo comió Luffy?", "o": ["Gomu Gomu no Mi", "Mera Mera no Mi", "Yami Yami no Mi", "Bara Bara no Mi"], "c": 0},
+{"cat": "anime", "q": "¿Qué técnica especial usa Goku para teletransportarse en 'Dragon Ball Z'?", "o": ["Teletransportación", "Kaioken", "Genkidama", "Kamehameha"], "c": 0},
+{"cat": "anime", "q": "¿Cómo se llama el país donde ocurre la mayor parte de 'Fullmetal Alchemist: Brotherhood'?", "o": ["Amestris", "Xerxes", "Creta", "Aerugo"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del primer opening de 'Neon Genesis Evangelion'?", "o": ["Cruel Angel's Thesis", "Fly Me to the Moon", "Komm, süsser Tod", "Thanatos"], "c": 0},
+{"cat": "anime", "q": "¿Qué personaje de 'Cowboy Bebop' tiene un perro llamado Ein?", "o": ["Spike Spiegel", "Jet Black", "Faye Valentine", "Edward"], "c": 0},
+{"cat": "anime", "q": "¿En 'Steins;Gate', ¿cómo se llama el dispositivo que envía mensajes al pasado?", "o": ["Teléfono Microondas", "Máquina del Tiempo", "SERN", "Divergence Meter"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del maestro de Naruto en la serie original?", "o": ["Kakashi Hatake", "Jiraiya", "Iruka Umino", "Tsunade"], "c": 0},
+{"cat": "anime", "q": "¿Qué poder especial posee el personaje principal de 'Mob Psycho 100'?", "o": ["Psicoquinesis", "Telepatía", "Telekinesis", "Piroquinesis"], "c": 0},
+{"cat": "anime", "q": "¿Cuántos episodios tiene la serie original de 'Hunter x Hunter' de 2011?", "o": ["148", "62", "136", "75"], "c": 0},
+{"cat": "anime", "q": "¿En 'Code Geass', ¿cuál es el nombre de guerra de Lelouch vi Britannia?", "o": ["Zero", "Suzaku", "C.C.", "Schneizel"], "c": 0},
+{"cat": "anime", "q": "¿Qué organización secreta busca la Piedra Filosofal en 'Fullmetal Alchemist: Brotherhood'?", "o": ["Homúnculos", "Militares", "Alquimistas", "Los Siete"], "c": 0},
+{"cat": "anime", "q": "¿Cómo se llama la espada que usa Zoro en 'One Piece' con tres hojas?", "o": ["Enma", "Shusui", "Sandai Kitetsu", "Yubashiri"], "c": 0},
+{"cat": "anime", "q": "¿Qué personaje de 'Attack on Titan' es conocido como el 'Titán Bestia'?", "o": ["Zeke Yeager", "Reiner Braun", "Eren Yeager", "Annie Leonhart"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del padre de Goku en 'Dragon Ball Z'?", "o": ["Bardock", "King Vegeta", "Raditz", "Frieza"], "c": 0},
+{"cat": "anime", "q": "¿En 'Death Note', ¿cómo se llama el shinigami que acompaña a Light?", "o": ["Ryuk", "Rem", "Sidoh", "Gelus"], "c": 0},
+{"cat": "anime", "q": "¿Qué año se estrenó 'Neon Genesis Evangelion' originalmente?", "o": ["1995", "1996", "1994", "1997"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del antagonista principal en 'Cowboy Bebop'?", "o": ["Vicious", "Julia", "Big Shot", "Ein"], "c": 0},
+{"cat": "anime", "q": "¿En 'Steins;Gate', ¿cómo se llama la científica que ayuda a Okabe?", "o": ["Makise Kurisu", "Mayuri Shiina", "Suzuha Amane", "Moeka Kiryu"], "c": 0},
+{"cat": "anime", "q": "¿Qué técnica usa Killua en 'Hunter x Hunter' para moverse rápidamente?", "o": ["Godspeed", "Ren", "Ten", "Zetsu"], "c": 0},
+{"cat": "anime", "q": "¿Cuál es el nombre del emperador en 'Code Geass'?", "o": ["Charles zi Britannia", "Lelouch vi Britannia", "Schneizel el Britannia", "Cornelia li Britannia"], "c": 0},
+{"cat": "anime", "q": "¿Qué poder tiene el personaje principal de 'Mob Psycho 100', Shigeo Kageyama?", "o": ["Poderes psíquicos", "Fuerza sobrehumana", "Control del fuego", "Invisibilidad"], "c": 0},
+{"cat": "comedia", "q": "¿En qué ciudad se desarrolla la mayor parte de la serie 'Friends'?", "o": ["Nueva York", "Los Ángeles", "Chicago", "Boston"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del bar donde trabajan Ted, Marshall y Lily en 'How I Met Your Mother'?", "o": ["McLaren's", "Central Perk", "Cheers", "Paddy's"], "c": 0},
+{"cat": "comedia", "q": "¿Qué actor interpreta a Michael Scott en 'The Office' (EE. UU.)?", "o": ["Steve Carell", "John Krasinski", "Rainn Wilson", "Ed Helms"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del planeta natal de los extraterrestres en '3rd Rock from the Sun'?", "o": ["Ninguno, son de otro sistema", "Saturno", "Júpiter", "No se especifica"], "c": 0},
+{"cat": "comedia", "q": "En 'Seinfeld', ¿cómo se llama el vecino de Jerry que siempre entra sin llamar?", "o": ["Kramer", "George", "Newman", "Elaine"], "c": 0},
+{"cat": "comedia", "q": "¿Qué personaje de 'The Big Bang Theory' tiene un doctorado en Física Teórica?", "o": ["Sheldon Cooper", "Leonard Hofstadter", "Howard Wolowitz", "Raj Koothrappali"], "c": 0},
+{"cat": "comedia", "q": "En 'Parks and Recreation', ¿qué cargo público ocupa Leslie Knope?", "o": ["Directora de Parques", "Alcaldesa", "Concejala", "Vicepresidenta"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del programa de televisión dentro de la serie '30 Rock'?", "o": ["TGS with Tracy Jordan", "The Girlie Show", "SNL", "The Larry Sanders Show"], "c": 0},
+{"cat": "comedia", "q": "En 'It's Always Sunny in Philadelphia', ¿cómo se llama el bar que regentan los protagonistas?", "o": ["Paddy's Pub", "McLaren's", "Central Perk", "The Drunken Clam"], "c": 0},
+{"cat": "comedia", "q": "¿Qué serie de comedia británica sigue a un grupo de empleados de una tienda de informática?", "o": ["The IT Crowd", "Black Books", "Spaced", "Peep Show"], "c": 0},
+{"cat": "comedia", "q": "En 'Modern Family', ¿cómo se llama el hijo de Phil y Claire Dunphy?", "o": ["Luke", "Manny", "Alex", "Haley"], "c": 0},
+{"cat": "comedia", "q": "¿Qué actor interpreta a Dwight Schrute en 'The Office' (EE. UU.)?", "o": ["Rainn Wilson", "John Krasinski", "Steve Carell", "B.J. Novak"], "c": 0},
+{"cat": "comedia", "q": "En 'Frasier', ¿qué programa de radio conduce Frasier Crane?", "o": ["The Dr. Frasier Crane Show", "Cheers", "The Mind of Frasier", "Radio Psychiatrist"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del personaje principal en 'The Fresh Prince of Bel-Air'?", "o": ["Will Smith", "Carlton Banks", "Jazz", "Uncle Phil"], "c": 0},
+{"cat": "comedia", "q": "En 'Arrested Development', ¿cuál es el negocio familiar de los Bluth?", "o": ["Construcción", "Cine", "Comida rápida", "Moda"], "c": 0},
+{"cat": "comedia", "q": "¿Qué serie de comedia animada sigue a una familia disfuncional en Springfield?", "o": ["Los Simpson", "Family Guy", "South Park", "Bob's Burgers"], "c": 0},
+{"cat": "comedia", "q": "En 'Cheers', ¿cómo se llama la camarera interpretada por Shelley Long?", "o": ["Diane Chambers", "Carla Tortelli", "Rebecca Howe", "Lilith Sternin"], "c": 0},
+{"cat": "comedia", "q": "¿Cuántas temporadas tiene la serie original 'The Office' (Reino Unido)?", "o": ["2", "3", "4", "1"], "c": 0},
+{"cat": "comedia", "q": "En 'Veep', ¿qué cargo político ocupa Selina Meyer?", "o": ["Vicepresidenta", "Presidenta", "Senadora", "Gobernadora"], "c": 0},
+{"cat": "comedia", "q": "¿Qué actor da vida a Larry David en 'Curb Your Enthusiasm'?", "o": ["Larry David", "Jerry Seinfeld", "Jeff Garlin", "Richard Lewis"], "c": 0},
+{"cat": "comedia", "q": "En 'Community', ¿qué clase enseña el profesor Ben Chang?", "o": ["Español", "Matemáticas", "Historia", "Arte"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del perro de la familia en 'Married... with Children'?", "o": ["Buck", "Lucky", "Rover", "Spot"], "c": 0},
+{"cat": "comedia", "q": "En 'The Simpsons', ¿cuál es el nombre del dueño de la taberna de Moe?", "o": ["Moe Szyslak", "Ned Flanders", "Barney Gumble", "Lenny Leonard"], "c": 0},
+{"cat": "comedia", "q": "¿Qué serie de comedia se centra en un grupo de amigos en un café en Nueva York?", "o": ["Friends", "Seinfeld", "How I Met Your Mother", "Will & Grace"], "c": 0},
+{"cat": "comedia", "q": "En 'Scrubs', ¿cómo se llama el hospital donde trabajan los personajes?", "o": ["Sacred Heart", "Mercy West", "Seattle Grace", "Princeton-Plainsboro"], "c": 0},
+{"cat": "comedia", "q": "¿Qué actor interpreta a Ron Swanson en 'Parks and Recreation'?", "o": ["Nick Offerman", "Chris Pratt", "Aziz Ansari", "Rob Lowe"], "c": 0},
+{"cat": "comedia", "q": "En 'Blackadder', ¿en qué época histórica está ambientada la primera temporada?", "o": ["Edad Media", "Renacimiento", "Guerra Mundial I", "Época isabelina"], "c": 0},
+{"cat": "comedia", "q": "¿Cuál es el nombre del programa de televisión de la serie 'The Larry Sanders Show'?", "o": ["The Larry Sanders Show", "Late Night with Larry", "The Sanders Hour", "Larry Live"], "c": 0},
+{"cat": "comedia", "q": "En 'The Good Place', ¿cómo se llama la arquitecta del vecindario?", "o": ["Michael", "Janet", "Eleanor", "Tahani"], "c": 0},
+{"cat": "comedia", "q": "¿Qué serie de comedia negra sigue a una familia de asesinos en Los Ángeles?", "o": ["Dexter", "You're the Worst", "Santa Clarita Diet", "The End of the F***ing World"], "c": 0},
+{"cat": "drama", "q": "¿En qué año se estrenó la primera temporada de 'The Wire'?", "o": ["2000", "2002", "2004", "2006"], "c": 1},
+{"cat": "drama", "q": "¿Qué actor interpretó a Walter White en 'Breaking Bad'?", "o": ["Bryan Cranston", "Aaron Paul", "Bob Odenkirk", "Giancarlo Esposito"], "c": 0},
+{"cat": "drama", "q": "¿Cuál es el nombre del bar que regenta la familia en 'The Sopranos'?", "o": ["The Bing", "Satriale's", "Nuovo Vesuvio", "Bada Bing"], "c": 1},
+{"cat": "drama", "q": "¿En qué ciudad transcurre principalmente 'Mad Men'?", "o": ["Los Ángeles", "Chicago", "Nueva York", "San Francisco"], "c": 2},
+{"cat": "drama", "q": "¿Cuántas temporadas tiene 'The Wire'?", "o": ["4", "5", "6", "7"], "c": 1},
+{"cat": "drama", "q": "¿Qué personaje de 'Breaking Bad' dice 'I am the one who knocks'?", "o": ["Jesse Pinkman", "Walter White", "Saul Goodman", "Hank Schrader"], "c": 1},
+{"cat": "drama", "q": "¿Quién interpreta a Don Draper en 'Mad Men'?", "o": ["John Hamm", "Jon Hamm", "John Hamm Jr.", "Jon Ham"], "c": 1},
+{"cat": "drama", "q": "¿En qué serie de drama aparece el personaje Omar Little?", "o": ["The Wire", "The Sopranos", "Breaking Bad", "Mad Men"], "c": 0},
+{"cat": "drama", "q": "¿Qué actor interpretó a Tony Soprano?", "o": ["James Gandolfini", "Michael Imperioli", "Steven Van Zandt", "Joe Pantoliano"], "c": 0},
+{"cat": "drama", "q": "¿Cuál es el nombre del jefe de la mafia rival en 'The Sopranos'?", "o": ["Johnny Sack", "Phil Leotardo", "Junior Soprano", "Richie Aprile"], "c": 1},
+{"cat": "drama", "q": "¿Qué temporada de 'Breaking Bad' presenta el episodio 'Ozymandias'?", "o": ["4", "5", "3", "2"], "c": 1},
+{"cat": "drama", "q": "¿En qué año se emitió el último episodio de 'The Sopranos'?", "o": ["2006", "2007", "2008", "2009"], "c": 1},
+{"cat": "drama", "q": "¿Qué personaje de 'The Wire' es conocido por su frase 'Sheeeee-it'?", "o": ["Stringer Bell", "Clay Davis", "Omar Little", "Bubbles"], "c": 1},
+{"cat": "drama", "q": "¿Cuál es el nombre de la agencia de publicidad en 'Mad Men'?", "o": ["Sterling Cooper", "Peggy Olson", "Draper & Campbell", "McCann Erickson"], "c": 0},
+{"cat": "drama", "q": "¿Qué actor interpreta a Jesse Pinkman en 'Breaking Bad'?", "o": ["Aaron Paul", "Bryan Cranston", "Dean Norris", "Jonathan Banks"], "c": 0},
+{"cat": "drama", "q": "¿Cuántos episodios tiene la serie 'The Wire'?", "o": ["60", "62", "64", "66"], "c": 0},
+{"cat": "drama", "q": "¿Qué personaje de 'The Sopranos' es el terapeuta de Tony?", "o": ["Dr. Melfi", "Dr. Cusamano", "Dr. Kennedy", "Dr. Green"], "c": 0},
+{"cat": "drama", "q": "¿En qué década está ambientada 'Mad Men'?", "o": ["1950s", "1960s", "1970s", "1940s"], "c": 1},
+{"cat": "drama", "q": "¿Qué actor interpretó a Stringer Bell en 'The Wire'?", "o": ["Idris Elba", "Michael B. Jordan", "Wendell Pierce", "Lance Reddick"], "c": 0},
+{"cat": "drama", "q": "¿Cuál es el nombre del hijo de Walter White en 'Breaking Bad'?", "o": ["Walter Jr.", "Flynn", "Jesse", "Skyler"], "c": 1},
+{"cat": "drama", "q": "¿Qué serie de drama tiene un episodio llamado 'Pine Barrens'?", "o": ["The Sopranos", "The Wire", "Breaking Bad", "Mad Men"], "c": 0},
+{"cat": "drama", "q": "¿Quién creó la serie 'Mad Men'?", "o": ["Matthew Weiner", "David Chase", "Vince Gilligan", "David Simon"], "c": 0},
+{"cat": "drama", "q": "¿Qué personaje de 'The Wire' es un ladrón de bancos?", "o": ["Omar Little", "Marlo Stanfield", "Proposition Joe", "Avon Barksdale"], "c": 0},
+{"cat": "drama", "q": "¿Cuántos Emmys ganó 'Breaking Bad' en total?", "o": ["12", "16", "20", "24"], "c": 1},
+{"cat": "drama", "q": "¿Qué actor interpreta a Paulie Walnuts en 'The Sopranos'?", "o": ["Tony Sirico", "Steve Schirripa", "Michael Imperioli", "Steven Van Zandt"], "c": 0},
+{"cat": "drama", "q": "¿En qué ciudad se desarrolla 'The Wire'?", "o": ["Baltimore", "Nueva York", "Chicago", "Filadelfia"], "c": 0},
+{"cat": "drama", "q": "¿Qué personaje de 'Mad Men' es secretaria de Don Draper?", "o": ["Peggy Olson", "Joan Holloway", "Betty Draper", "Megan Draper"], "c": 0},
+{"cat": "drama", "q": "¿Qué temporada de 'The Sopranos' tiene 21 episodios?", "o": ["1", "2", "3", "4"], "c": 0},
+{"cat": "drama", "q": "¿Qué actor interpretó a Gus Fring en 'Breaking Bad'?", "o": ["Giancarlo Esposito", "Jonathan Banks", "Bob Odenkirk", "Dean Norris"], "c": 0},
+{"cat": "drama", "q": "¿Cuál es el nombre del creador de 'The Wire'?", "o": ["David Simon", "Vince Gilligan", "Matthew Weiner", "David Chase"], "c": 0},
+{"cat": "dorama", "q": "¿Cuál es el nombre del actor que interpreta a Kim Tan en 'Los herederos'?", "o": ["Lee Min-ho", "Kim Woo-bin", "Park Shin-hye", "Kim Hyun-joong"], "c": 0},
+{"cat": "dorama", "q": "En 'Crash Landing on You', ¿qué objeto icónico usa Ri Jeong-hyeok para proteger a Yoon Se-ri?", "o": ["Un paraguas", "Una bufanda", "Un reloj", "Una vela"], "c": 1},
+{"cat": "dorama", "q": "¿Cuántos episodios tiene la primera temporada de 'El amor es como el chai' (serie tailandesa)?", "o": ["10", "12", "16", "8"], "c": 1},
+{"cat": "dorama", "q": "¿Qué personaje de 'Goblin' es el novio noveno de Ji Eun-tak?", "o": ["Kim Shin", "Wang Yeo", "Deok-hwa", "Grim Reaper"], "c": 0},
+{"cat": "dorama", "q": "En 'Itaewon Class', ¿cuál es el nombre del restaurante que abre Park Sae-ro-yi?", "o": ["DanBam", "Jangga", "Golden Dragon", "Seoul Pub"], "c": 0},
+{"cat": "dorama", "q": "¿Qué drama coreano popular tiene como trama central un triángulo amoroso entre una mujer y dos hermanos?", "o": ["Boys Over Flowers", "Descendants of the Sun", "The Heirs", "My ID is Gangnam Beauty"], "c": 0},
+{"cat": "dorama", "q": "¿Cuál es el nombre del actor que interpreta al capitán Yoo Shi-jin en 'Descendientes del sol'?", "o": ["Song Joong-ki", "Song Hye-kyo", "Kim Ji-won", "Jin Goo"], "c": 0},
+{"cat": "dorama", "q": "En 'El juego del calamar', ¿qué número de jugador lleva Ali Abdul?", "o": ["199", "456", "067", "101"], "c": 0},
+{"cat": "dorama", "q": "¿Qué serie china de wuxia protagoniza Xiao Zhan como Wei Wuxian?", "o": ["The Untamed", "Love O2O", "The King's Avatar", "Eternal Love"], "c": 0},
+{"cat": "dorama", "q": "¿Cuántos episodios tiene 'El amor es como el chai' en su versión coreana?", "o": ["No existe versión coreana", "12", "16", "8"], "c": 0},
+{"cat": "dorama", "q": "En 'Strong Girl Bong-soon', ¿qué poder especial tiene la protagonista?", "o": ["Super fuerza", "Invisibilidad", "Leer mentes", "Volar"], "c": 0},
+{"cat": "dorama", "q": "¿Qué actor interpreta a Gu Jun-pyo en la versión coreana de 'Boys Over Flowers'?", "o": ["Lee Min-ho", "Kim Hyun-joong", "Kim Bum", "Kang Ji-sub"], "c": 0},
+{"cat": "dorama", "q": "En 'Hotel del Luna', ¿cuántos años tiene Jang Man-wol atrapada en el hotel?", "o": ["1000", "500", "1300", "200"], "c": 2},
+{"cat": "dorama", "q": "¿Cuál es el nombre del personaje principal femenino en 'What's Wrong with Secretary Kim'?", "o": ["Kim Mi-so", "Kim Ji-won", "Park Min-young", "Yoo Jin-ah"], "c": 0},
+{"cat": "dorama", "q": "En 'Sky Castle', ¿qué profesión tienen la mayoría de los padres?", "o": ["Médicos", "Abogados", "Profesores", "Empresarios"], "c": 0},
+{"cat": "dorama", "q": "¿Qué drama japonés popular trata sobre una chica que viaja en el tiempo?", "o": ["Orange", "Your Lie in April", "Erased", "One Week Friends"], "c": 0},
+{"cat": "dorama", "q": "En 'Vincenzo', ¿qué animal aparece como mascota del protagonista?", "o": ["Un erizo", "Un gato", "Un perro", "Un conejo"], "c": 0},
+{"cat": "dorama", "q": "¿Cuál es el nombre del actor que interpreta a Moon Kang-tae en 'It's Okay to Not Be Okay'?", "o": ["Kim Soo-hyun", "Park Seo-joon", "Seo Ye-ji", "Oh Jung-se"], "c": 0},
+{"cat": "dorama", "q": "En 'The Glory', ¿qué venganza planea Moon Dong-eun?", "o": ["Contra sus acosadores escolares", "Contra su familia", "Contra su jefe", "Contra su exnovio"], "c": 0},
+{"cat": "dorama", "q": "¿Qué serie taiwanesa es conocida por su trama de amor entre un CEO y una asistente?", "o": ["Fated to Love You", "The Prince Who Turns into a Frog", "Meteor Garden", "Love Storm"], "c": 0},
+{"cat": "dorama", "q": "En 'Extraordinary Attorney Woo', ¿qué trastorno tiene Woo Young-woo?", "o": ["Trastorno del espectro autista", "TDAH", "Ansiedad social", "Trastorno bipolar"], "c": 0},
+{"cat": "dorama", "q": "¿Cuántos episodios tiene 'El amor es como el chai' (versión tailandesa original)?", "o": ["12", "10", "16", "8"], "c": 0},
+{"cat": "dorama", "q": "En 'Squid Game', ¿qué juego es el primero que juegan los participantes?", "o": ["Luz roja, luz verde", "El puente de cristal", "Las canicas", "El tira y afloja"], "c": 0},
+{"cat": "dorama", "q": "¿Qué actor interpreta a Han Seo-jun en 'True Beauty'?", "o": ["Cha Eun-woo", "Hwang In-yeop", "Moon Ga-young", "Park Yoo-na"], "c": 1},
+{"cat": "dorama", "q": "En 'Mr. Sunshine', ¿en qué época histórica se desarrolla la trama?", "o": ["Ocupación japonesa", "Dinastía Joseon", "Guerra de Corea", "Años 80"], "c": 0},
+{"cat": "dorama", "q": "¿Cuál es el nombre del drama chino que popularizó a Wang Yibo como Lan Wangji?", "o": ["The Untamed", "The Legend of Fei", "Gank Your Heart", "Love Actually"], "c": 0},
+{"cat": "dorama", "q": "En 'Start-Up', ¿cómo se llama la empresa de tecnología creada por Seo Dal-mi?", "o": ["Samsan Tech", "Sandbox", "Noona", "Innocean"], "c": 0},
+{"cat": "dorama", "q": "¿Qué drama coreano presenta a un grim reaper y un goblin viviendo juntos?", "o": ["Goblin", "Hotel del Luna", "The King: Eternal Monarch", "Abyss"], "c": 0},
+{"cat": "dorama", "q": "En 'Alchemy of Souls', ¿qué poder especial tiene Nak-su?", "o": ["Puede cambiar de alma", "Puede volar", "Puede controlar el fuego", "Puede sanar"], "c": 0},
+{"cat": "dorama", "q": "¿Cuántos episodios tiene la serie japonesa 'Alice in Borderland' en su primera temporada?", "o": ["8", "10", "12", "6"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix que sigue a un equipo de F1 durante una temporada completa?", "o": ["Grand Prix Driver", "Formula 1: Drive to Survive", "The Speed of F1", "Racing Legends"], "c": 1},
+{"cat": "documentales", "q": "¿Qué serie documental de la BBC, narrada por David Attenborough, explora la vida en los océanos?", "o": ["Planet Earth", "Blue Planet II", "The Hunt", "Life Story"], "c": 1},
+{"cat": "documentales", "q": "En 'Making a Murderer', ¿cuál es el apellido del hombre cuya condena por asesinato es cuestionada?", "o": ["Avery", "Dassey", "Kratz", "Zellner"], "c": 0},
+{"cat": "documentales", "q": "¿Qué serie documental de HBO sigue a los jugadores de la NBA durante la temporada 2017-2018?", "o": ["The Last Dance", "Hard Knocks", "All or Nothing: Toronto Raptors", "The Playbook"], "c": 2},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix que investiga el colapso de una empresa de criptomonedas?", "o": ["The Social Dilemma", "Trust No One: The Hunt for the Crypto King", "The Great Hack", "Fyre"], "c": 1},
+{"cat": "documentales", "q": "En 'The Last Dance', ¿qué año se centra principalmente la temporada de los Chicago Bulls?", "o": ["1996-1997", "1997-1998", "1995-1996", "1998-1999"], "c": 1},
+{"cat": "documentales", "q": "¿Qué serie documental de crímenes reales de Netflix se centra en el asesinato de Laci Peterson?", "o": ["The Staircase", "The Murder of Laci Peterson", "American Murder: The Family Next Door", "The Innocent Man"], "c": 1},
+{"cat": "documentales", "q": "¿Cuál de estas series documentales fue producida por los hermanos Coen?", "o": ["The Vietnam War", "The Jinx", "The Frozen North", "The Story of Film"], "c": 2},
+{"cat": "documentales", "q": "En 'Planet Earth II', ¿qué isla es famosa por sus iguanas marinas?", "o": ["Madagascar", "Galápagos", "Isla de Pascua", "Seychelles"], "c": 1},
+{"cat": "documentales", "q": "¿Qué serie documental de Netflix sigue a un grupo de adolescentes en una escuela secundaria de Ohio?", "o": ["Cheer", "Last Chance U", "American Vandal", "The Society"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental sobre la vida del chef René Redzepi en Noma?", "o": ["Chef's Table", "Salt, Fat, Acid, Heat", "Ants on a Shrimp", "Ugly Delicious"], "c": 2},
+{"cat": "documentales", "q": "En 'The Jinx: The Life and Deaths of Robert Durst', ¿qué frase famosa dice Durst en el baño?", "o": ["No fui yo", "Lo maté", "Killed them all, of course", "Esto es una trampa"], "c": 2},
+{"cat": "documentales", "q": "¿Qué serie documental de HBO explora la crisis de opioides en Estados Unidos?", "o": ["The Crime of the Century", "The Pharmacist", "Addiction", "Heroin: Cape Cod, USA"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix sobre el escándalo de Fyre Festival?", "o": ["The Great Hack", "Fyre", "The Social Dilemma", "Don't F**k with Cats"], "c": 1},
+{"cat": "documentales", "q": "En 'The Staircase', ¿quién es acusado del asesinato de su esposa Kathleen?", "o": ["Michael Peterson", "David Rudolf", "Duane Deaver", "Larry Pollard"], "c": 0},
+{"cat": "documentales", "q": "¿Qué serie documental de National Geographic sigue a la familia real británica?", "o": ["The Crown", "The Royal House of Windsor", "Diana: In Her Own Words", "Royal Family"], "c": 1},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix sobre la vida del músico Taylor Swift?", "o": ["Miss Americana", "Taylor Swift: Reputation Stadium Tour", "Folklore: The Long Pond Studio Sessions", "The Swift Life"], "c": 0},
+{"cat": "documentales", "q": "En 'The Vietnam War' de Ken Burns, ¿cuántos episodios tiene la serie?", "o": ["8", "10", "12", "6"], "c": 1},
+{"cat": "documentales", "q": "¿Qué serie documental de crímenes reales de Netflix se centra en el caso de la familia McStay?", "o": ["The Disappearance of the McStay Family", "Murder Mountain", "The Keepers", "The Family"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál de estas series documentales fue narrada por Barack Obama?", "o": ["Our Great National Parks", "Planet Earth III", "The World According to Jeff Goldblum", "A Life on Our Planet"], "c": 0},
+{"cat": "documentales", "q": "En 'Chef's Table', ¿qué chef es conocido por su restaurante en el País Vasco, Mugaritz?", "o": ["Massimo Bottura", "Andoni Luis Aduriz", "Grant Achatz", "Magnus Nilsson"], "c": 1},
+{"cat": "documentales", "q": "¿Qué serie documental de HBO sigue a un equipo de fútbol americano universitario?", "o": ["Hard Knocks", "Last Chance U", "All or Nothing", "Friday Night Tykes"], "c": 1},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix sobre el asesinato de la periodista Kim Wall?", "o": ["The Inventor", "The Disappearance of Kim Wall", "The Vanishing at the Cecil Hotel", "The Confession Tapes"], "c": 1},
+{"cat": "documentales", "q": "En 'Our Planet', ¿qué animal es el foco del episodio sobre los desiertos?", "o": ["León", "Camello", "Suricata", "Escorpión"], "c": 2},
+{"cat": "documentales", "q": "¿Qué serie documental de Apple TV+ sigue a la NASA y el programa espacial?", "o": ["For All Mankind", "The Right Stuff", "Apollo 11", "Space: The Final Frontier"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de Netflix sobre la vida del actor Rob Lowe?", "o": ["Rob Lowe: The Biography", "The Lowe Down", "Stories I Only Tell My Friends", "The Outsiders"], "c": 2},
+{"cat": "documentales", "q": "En 'The Keepers', ¿qué institución es investigada por encubrimiento de abusos?", "o": ["La Iglesia Católica", "La Escuela de Baltimore", "El Orfanato de San Juan", "El Seminario de Santa María"], "c": 0},
+{"cat": "documentales", "q": "¿Qué serie documental de Netflix sigue a un grupo de cazadores de tormentas?", "o": ["Storm Chasers", "Tornado Alley", "Twister: The Documentary", "Extreme Weather"], "c": 0},
+{"cat": "documentales", "q": "¿Cuál es el nombre del documental de HBO sobre la vida del rapero Jay-Z?", "o": ["The Blueprint", "Jay-Z: The Documentary", "The Carter", "The Story of O.J."], "c": 1},
+{"cat": "documentales", "q": "En 'Wild Wild Country', ¿qué líder espiritual es el centro del documental?", "o": ["Osho", "Maharishi Mahesh Yogi", "Sri Sri Ravi Shankar", "Jaggi Vasudev"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie cristiana sigue la historia de la familia Robertson en una granja de patos?", "o": ["Duck Dynasty", "The Chosen", "Touched by an Angel", "Highway to Heaven"], "c": 0},
+{"cat": "cristianas", "q": "¿En qué serie aparece el personaje de Jesús interpretado por Jonathan Roumie?", "o": ["The Bible", "The Chosen", "A.D. The Bible Continues", "Jesus of Nazareth"], "c": 1},
+{"cat": "cristianas", "q": "¿Cuál es el nombre del ángel principal en 'Touched by an Angel'?", "o": ["Monica", "Tess", "Andrew", "Gloria"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie de fe muestra a un exconvicto llamado Michael que ayuda a personas con problemas?", "o": ["Highway to Heaven", "7th Heaven", "Sue Thomas: F.B.Eye", "The Way Home"], "c": 0},
+{"cat": "cristianas", "q": "¿En '7th Heaven', cuántos hijos tienen los Camden al inicio de la serie?", "o": ["4", "5", "6", "7"], "c": 1},
+{"cat": "cristianas", "q": "¿Qué serie cristiana animada presenta a un grupo de niños que aprenden lecciones bíblicas?", "o": ["VeggieTales", "Superbook", "The Adventures of the Galaxy Rangers", "Davey and Goliath"], "c": 1},
+{"cat": "cristianas", "q": "¿Cómo se llama el pastor principal en la serie 'The Bible' de 2013?", "o": ["Noé", "Abraham", "Moisés", "Jesús"], "c": 2},
+{"cat": "cristianas", "q": "¿En 'Highway to Heaven', quién interpreta a Jonathan Smith?", "o": ["Michael Landon", "Victor French", "James Garner", "Tommy Lasorda"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie de fe está basada en la vida real de una agente del FBI sorda?", "o": ["Sue Thomas: F.B.Eye", "The Guardian", "Eli Stone", "Joan of Arcadia"], "c": 0},
+{"cat": "cristianas", "q": "¿Cuál es el nombre del ángel de la muerte en 'Touched by an Angel'?", "o": ["Andrew", "Rafael", "Miguel", "Gabriel"], "c": 0},
+{"cat": "cristianas", "q": "¿En 'The Chosen', qué discípulo es recaudador de impuestos?", "o": ["Pedro", "Mateo", "Juan", "Andrés"], "c": 1},
+{"cat": "cristianas", "q": "¿Qué serie cristiana de los 90s se centraba en una familia con un padre pastor?", "o": ["7th Heaven", "The Waltons", "Little House on the Prairie", "Promised Land"], "c": 0},
+{"cat": "cristianas", "q": "¿Cómo se llama la serie que sigue a un ángel que ayuda a una familia en la Tierra?", "o": ["Angels in America", "Touched by an Angel", "Highway to Heaven", "The Angels of Light"], "c": 1},
+{"cat": "cristianas", "q": "¿En qué serie aparece el personaje de Willie Robertson?", "o": ["Duck Dynasty", "The Chosen", "7th Heaven", "Sue Thomas"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie animada cristiana presenta a un niño llamado Chris y su robot?", "o": ["Superbook", "VeggieTales", "The Flying House", "Davey and Goliath"], "c": 2},
+{"cat": "cristianas", "q": "¿Cuántas temporadas tiene '7th Heaven'?", "o": ["9", "10", "11", "12"], "c": 2},
+{"cat": "cristianas", "q": "¿En 'The Chosen', qué actor interpreta a María Magdalena?", "o": ["Elizabeth Tabish", "Shahar Isaac", "Jonathan Roumie", "Erick Avari"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie de fe muestra a un abogado que tiene visiones proféticas?", "o": ["Eli Stone", "Joan of Arcadia", "The Guardian", "Sue Thomas"], "c": 0},
+{"cat": "cristianas", "q": "¿Cómo se llama el ángel que guía a los niños en 'Superbook'?", "o": ["Gizmo", "Rufus", "Crispín", "Salomón"], "c": 1},
+{"cat": "cristianas", "q": "¿En 'Duck Dynasty', cuál es el nombre del patriarca de la familia?", "o": ["Phil Robertson", "Si Robertson", "Jase Robertson", "Willie Robertson"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie cristiana se emitió originalmente entre 1994 y 2003?", "o": ["Touched by an Angel", "The Chosen", "Duck Dynasty", "7th Heaven"], "c": 0},
+{"cat": "cristianas", "q": "¿En 'Highway to Heaven', quién interpreta a Mark Gordon?", "o": ["Victor French", "Michael Landon", "James Garner", "John Ritter"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie de fe trata sobre una adolescente que habla con Dios?", "o": ["Joan of Arcadia", "7th Heaven", "Touched by an Angel", "Eli Stone"], "c": 0},
+{"cat": "cristianas", "q": "¿Cuál es el nombre del ángel principal en 'Highway to Heaven'?", "o": ["Jonathan", "Mark", "Andrew", "Michael"], "c": 0},
+{"cat": "cristianas", "q": "¿En 'The Chosen', qué temporada presenta la historia de la mujer samaritana?", "o": ["Temporada 1", "Temporada 2", "Temporada 3", "Temporada 4"], "c": 1},
+{"cat": "cristianas", "q": "¿Qué serie animada cristiana tiene un episodio sobre 'La historia de Navidad'?", "o": ["VeggieTales", "Superbook", "The Flying House", "Davey and Goliath"], "c": 0},
+{"cat": "cristianas", "q": "¿En 'Sue Thomas: F.B.Eye', cómo se llama el perro de Sue?", "o": ["Levi", "Rex", "Buddy", "Max"], "c": 0},
+{"cat": "cristianas", "q": "¿Qué serie de fe se desarrolla en un pueblo llamado Glenoak?", "o": ["7th Heaven", "Touched by an Angel", "Highway to Heaven", "The Waltons"], "c": 1},
+{"cat": "cristianas", "q": "¿Cuántos episodios tiene 'Duck Dynasty' en total?", "o": ["100", "130", "140", "150"], "c": 1},
+{"cat": "cristianas", "q": "¿En 'The Chosen', qué discípulo es conocido como 'el hermano de Pedro'?", "o": ["Andrés", "Felipe", "Tomás", "Santiago"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie más vista de la historia de la televisión mundial en términos de audiencia acumulada?", "o": ["Juego de Tronos", "Los Simpson", "The Walking Dead", "M*A*S*H"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Qué serie de Netflix se convirtió en la más vista de la plataforma en sus primeras 28 días con más de 1.700 millones de horas reproducidas?", "o": ["Stranger Things", "El juego del calamar", "Los Bridgerton", "La Casa de Papel"], "c": 1},
+{"cat": "mas_vistas", "q": "¿En qué año se emitió el episodio final de 'Friends', que fue visto por más de 52 millones de personas en EE.UU.?", "o": ["2002", "2004", "2006", "2000"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie de habla no inglesa más vista en Netflix hasta 2024?", "o": ["La Casa de Papel", "El juego del calamar", "Lupin", "Élite"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Qué serie de HBO tiene el récord de la audiencia más alta en la historia del canal, con más de 19 millones de espectadores en su final?", "o": ["Los Soprano", "Juego de Tronos", "The Wire", "Sex and the City"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuántas temporadas tiene 'The Walking Dead', la serie de zombies más vista de la historia?", "o": ["9", "10", "11", "12"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Qué serie de comedia de situación estadounidense tiene el récord de ser la más vista en sindicación mundial?", "o": ["The Big Bang Theory", "Friends", "Seinfeld", "How I Met Your Mother"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuál fue la primera serie original de Netflix en superar los 100 millones de hogares suscriptores en sus primeros 28 días?", "o": ["Stranger Things", "The Crown", "El juego del calamar", "Los Bridgerton"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Qué serie de televisión tiene el mayor número de episodios emitidos en horario estelar en la historia de EE.UU.?", "o": ["Los Simpson", "Ley y Orden", "Bonanza", "Gunsmoke"], "c": 3},
+{"cat": "mas_vistas", "q": "¿En qué serie de streaming se basa el fenómeno global del 'Barbenheimer' pero en versión televisiva?", "o": ["The Crown", "Succession", "Stranger Things", "The Last of Us"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuántos episodios tiene la serie 'Breaking Bad', considerada una de las más populares de la historia?", "o": ["62", "55", "67", "72"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Qué serie de Netflix fue la primera en alcanzar 1.000 millones de horas vistas en sus primeros 28 días?", "o": ["El juego del calamar", "Stranger Things 4", "Los Bridgerton 2", "La Casa de Papel 4"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie más vista en la historia de Amazon Prime Video según datos de 2023?", "o": ["The Boys", "El Señor de los Anillos: Los Anillos de Poder", "Reacher", "La maravillosa Sra. Maisel"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Qué serie de televisión tiene el récord de la mayor audiencia para un final de serie en la historia de EE.UU. (106 millones de espectadores)?", "o": ["M*A*S*H", "Cheers", "Seinfeld", "Friends"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuántos episodios tiene 'Los Simpson', la serie animada más longeva y vista?", "o": ["Más de 500", "Más de 600", "Más de 700", "Más de 800"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Qué serie de Disney+ se convirtió en la más vista de la plataforma en 2022?", "o": ["The Mandalorian", "Loki", "Obi-Wan Kenobi", "Andor"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie de drama médico más vista de la historia de la televisión?", "o": ["House", "Grey's Anatomy", "ER", "Chicago Med"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Qué serie de HBO tuvo el récord de audiencia antes de 'Juego de Tronos'?", "o": ["Los Soprano", "The Wire", "Sex and the City", "True Blood"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuántas temporadas tiene 'Stranger Things' hasta 2024?", "o": ["3", "4", "5", "6"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Qué serie de televisión británica es la más vendida y vista internacionalmente?", "o": ["Doctor Who", "Downton Abbey", "Sherlock", "The Crown"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuál fue la serie más vista en la historia de la televisión por cable en EE.UU. antes de 'Juego de Tronos'?", "o": ["The Walking Dead", "Los Soprano", "Dexter", "Homeland"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Qué serie de Netflix tiene el récord de más horas vistas en su primera semana de estreno?", "o": ["El juego del calamar", "Stranger Things 4", "Miércoles", "Dahmer"], "c": 1},
+{"cat": "mas_vistas", "q": "¿En qué año se estrenó 'Friends', la sitcom más vista de los 90?", "o": ["1992", "1994", "1996", "1998"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Cuántos episodios tiene 'El juego del calamar' en su primera temporada?", "o": ["7", "8", "9", "10"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Qué serie de televisión tiene el mayor número de episodios de todos los tiempos (más de 15.000)?", "o": ["Los Simpson", "Ley y Orden: UVE", "Hospital General", "Doctor Who"], "c": 2},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie de ciencia ficción más vista en la historia de Netflix?", "o": ["Stranger Things", "Dark", "The 100", "Altered Carbon"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Qué serie de HBO fue la primera en superar los 10 millones de espectadores en un final?", "o": ["Los Soprano", "Juego de Tronos", "The Wire", "True Blood"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuántos episodios tiene 'The Crown', la serie dramática más vista de Netflix sobre la realeza?", "o": ["50", "60", "70", "80"], "c": 1},
+{"cat": "mas_vistas", "q": "¿Qué serie de televisión tiene el récord de la mayor audiencia para un episodio de estreno de temporada (más de 17 millones)?", "o": ["The Walking Dead", "Juego de Tronos", "Stranger Things", "Breaking Bad"], "c": 0},
+{"cat": "mas_vistas", "q": "¿Cuál es la serie de animación más vista en la historia de Netflix?", "o": ["Big Mouth", "BoJack Horseman", "Arcane", "Los Simpson"], "c": 2}
+];
+
+let currentQuestions = [];
+let currentQ = 0;
+let score = 0;
+let category = 'all';
+let fiftyUsed = false;
+let phoneUsed = false;
+let audienceUsed = false;
+let answering = false;
+
+// ===== SOUND ENGINE (retro 8-bit, sin archivos de audio) =====
+let audioCtx = null;
+function getAudioCtx() {
+    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+}
+function playTone(freq, duration, type, delay, volume) {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'square';
+        osc.frequency.value = freq;
+        const startTime = ctx.currentTime + (delay || 0);
+        gain.gain.setValueAtTime(volume || 0.2, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    } catch(e) {}
+}
+function soundClick() { playTone(600, 0.08, 'square', 0, 0.12); }
+function soundCorrect() {
+    playTone(523, 0.12, 'square', 0, 0.18);
+    playTone(659, 0.12, 'square', 0.1, 0.18);
+    playTone(784, 0.2, 'square', 0.2, 0.18);
+}
+function soundWrong() {
+    playTone(300, 0.25, 'sawtooth', 0, 0.18);
+    playTone(150, 0.35, 'sawtooth', 0.15, 0.18);
+}
+function soundLifeline() {
+    playTone(440, 0.1, 'triangle', 0, 0.15);
+    playTone(660, 0.15, 'triangle', 0.08, 0.15);
+}
+function soundWin() {
+    [523,659,784,1047,784,1047,1319].forEach((f,i) => playTone(f, 0.18, 'square', i*0.15, 0.18));
+}
+function soundLose() {
+    playTone(400, 0.3, 'sawtooth', 0, 0.18);
+    playTone(300, 0.3, 'sawtooth', 0.25, 0.18);
+    playTone(200, 0.5, 'sawtooth', 0.5, 0.18);
+}
+// ===== FIN SOUND ENGINE =====
+
+// ===== MODAL (reemplaza alert(), que el WebView no muestra) =====
+function showModal(title, html) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal() {
+    soundClick();
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+// ===== FIN MODAL =====
+
+// ===== CAPTURA GLOBAL DE ERRORES (para verlos en pantalla, sin consola) =====
+window.addEventListener('error', function(e) {
+    try { showModal('⚠️ Error', (e.message || 'Error desconocido') + '<br><small>' + (e.filename||'') + ':' + (e.lineno||'') + '</small>'); } catch(_) {}
+});
+window.addEventListener('unhandledrejection', function(e) {
+    try { showModal('⚠️ Error de conexión', String(e.reason && e.reason.message ? e.reason.message : e.reason)); } catch(_) {}
+});
+// ===== FIN CAPTURA DE ERRORES =====
+
+function shuffle(arr) {
+    for(let i=arr.length-1; i>0; i--) {
+        let j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function showMenu() {
+    soundClick();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('menuScreen').classList.add('active');
+}
+
+function showCategories() {
+    soundClick();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('catScreen').classList.add('active');
+    document.getElementById('catStatus').textContent = '';
+}
+
+// ===== BUSCAR SERIE ESPECIFICA (IA) =====
+const CUSTOM_API_URL = 'https://seriesquiz-api.charly-tricks.dev/api/questions';
+
+function showCustomGame() {
+    soundClick();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('customScreen').classList.add('active');
+    document.getElementById('customStatus').textContent = '';
+    document.getElementById('customGameInput').value = '';
+}
+
+window.searchCustomGame = async function searchCustomGame() {
+    try {
+        const input = document.getElementById('customGameInput');
+        const gameName = input.value.trim();
+        const statusEl = document.getElementById('customStatus');
+        const btn = document.getElementById('customSearchBtn');
+
+        if(!gameName) {
+            statusEl.style.color = '#ff6b6b';
+            statusEl.textContent = 'Escribí el nombre de una serie primero';
+            return;
+        }
+
+        soundClick();
+        btn.disabled = true;
+        statusEl.style.color = '#00e5ff';
+        statusEl.textContent = '⏳ Generando 30 preguntas... (puede tardar unos segundos)';
+
+        const res = await fetch(CUSTOM_API_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({game: gameName})
+        });
+        if(!res.ok) throw new Error('Servidor respondió ' + res.status);
+        const data = await res.json();
+        if(!data.questions || data.questions.length < 5) throw new Error('Muy pocas preguntas generadas');
+
+        statusEl.style.color = '#00e676';
+        statusEl.textContent = `✅ ${data.questions.length} preguntas listas sobre ${data.game}!`;
+        setTimeout(() => {
+            btn.disabled = false;
+            beginGame(shuffle([...data.questions]).slice(0, 15));
+        }, 700);
+    } catch(e) {
+        const btn = document.getElementById('customSearchBtn');
+        const statusEl = document.getElementById('customStatus');
+        if(btn) btn.disabled = false;
+        if(statusEl) {
+            statusEl.style.color = '#ff6b6b';
+            statusEl.textContent = '❌ ' + (e.message || 'No se pudo conectar');
+        }
+        showModal('⚠️ Error al buscar preguntas', String(e.message || e));
+    }
+}
+// ===== FIN BUSCAR SERIE ESPECIFICA =====
+
+// ===== GENERAR MAS PREGUNTAS DEL GENERO (IA) =====
+const CATEGORY_TOPICS = {
+    accion: 'Series de accion mas populares y aclamadas de todos los tiempos',
+    infantil: 'Series infantiles y familiares mas populares',
+    terror: 'Series de terror y suspenso mas populares y aclamadas',
+    anime: 'Anime (series) mas populares y aclamadas de todos los tiempos',
+    comedia: 'Series de comedia mas populares y aclamadas de todos los tiempos',
+    drama: 'Series de drama mas aclamadas de todos los tiempos',
+    dorama: 'Doramas coreanos y series asiaticas mas populares',
+    documentales: 'Series documentales mas populares y aclamadas',
+    cristianas: 'Series cristianas y de fe mas conocidas',
+    mas_vistas: 'Las series mas vistas y populares de la historia de la television y streaming',
+    all: 'Series populares de todos los generos'
+};
+
+window.generateFreshGenre = async function generateFreshGenre() {
+    try {
+        const statusEl = document.getElementById('catStatus');
+        const base = CATEGORY_TOPICS[category] || CATEGORY_TOPICS['all'];
+        const topic = base + ' (tanda alternativa ' + Math.floor(Math.random()*100000) + ')';
+
+        soundClick();
+        statusEl.style.color = '#00e5ff';
+        statusEl.textContent = '⏳ Generando 30 preguntas nuevas... (puede tardar 20-40 segundos)';
+
+        const res = await fetch(CUSTOM_API_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({game: topic})
+        });
+        if(!res.ok) throw new Error('Servidor respondió ' + res.status);
+        const data = await res.json();
+        if(!data.questions || data.questions.length < 5) throw new Error('Muy pocas preguntas generadas');
+
+        statusEl.style.color = '#00e676';
+        statusEl.textContent = `✅ ${data.questions.length} preguntas nuevas listas!`;
+        setTimeout(() => {
+            beginGame(shuffle([...data.questions]).slice(0, 15));
+        }, 700);
+    } catch(e) {
+        const statusEl = document.getElementById('catStatus');
+        if(statusEl) {
+            statusEl.style.color = '#ff6b6b';
+            statusEl.textContent = '❌ ' + (e.message || 'No se pudo conectar');
+        }
+        showModal('⚠️ Error al generar preguntas', String(e.message || e));
+    }
+}
+// ===== FIN GENERAR MAS PREGUNTAS =====
+
+function selectCategory(cat, el) {
+    soundClick();
+    category = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('catStatus').textContent = '';
+}
+
+function buildPrizeLadder() {
+    let html = '';
+    for(let i=14; i>=0; i--) {
+        let cls = 'prize-step';
+        if(i === currentQ) cls += ' current';
+        if(MILESTONES.includes(i)) cls += ' milestone';
+        html += `<div class="${cls}">${PRIZES[i]}</div>`;
+    }
+    document.getElementById('prizeLadder').innerHTML = html;
+}
+
+function beginGame(questionsArray) {
+    currentQuestions = questionsArray;
+    currentQ = 0;
+    score = 0;
+    fiftyUsed = false;
+    phoneUsed = false;
+    audienceUsed = false;
+    answering = false;
+
+    document.getElementById('fiftyBtn').className = 'lifeline-btn';
+    document.getElementById('phoneBtn').className = 'lifeline-btn';
+    document.getElementById('audienceBtn').className = 'lifeline-btn';
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('gameScreen').classList.add('active');
+    showQuestion();
+}
+
+function startGame() {
+    soundClick();
+    let pool = category === 'all' ? [...QUESTIONS] : QUESTIONS.filter(q => q.cat === category);
+    if(pool.length < 15) pool = [...QUESTIONS];
+    beginGame(shuffle(pool).slice(0, 15));
+}
+
+function showQuestion() {
+    if(currentQ >= 15) { endGame(true); return; }
+    const q = currentQuestions[currentQ];
+    answering = true;
+
+    document.getElementById('questionNum').textContent = `Pregunta ${currentQ+1}/15`;
+    document.getElementById('scoreDisplay').textContent = score > 0 ? `$${score.toLocaleString()}` : '$0';
+    document.getElementById('questionText').textContent = q.q;
+
+    const cats = {accion:'Acción',infantil:'Infantil',terror:'Terror',anime:'Anime',comedia:'Comedia',drama:'Drama',dorama:'Dorama',documentales:'Documentales',cristianas:'Cristianas',mas_vistas:'Más Vistas',all:'Mixto'};
+    document.getElementById('categoryDisplay').textContent = `📂 ${cats[q.cat] || 'Mixto'}`;
+
+    const container = document.getElementById('optionsContainer');
+    container.innerHTML = '';
+    const letters = ['A','B','C','D'];
+    q.o.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="letter">${letters[i]}</span>${opt}`;
+        btn.onclick = () => answerQuestion(i);
+        btn.id = `opt${i}`;
+        container.appendChild(btn);
+    });
+
+    buildPrizeLadder();
+}
+
+function answerQuestion(selected) {
+    if(!answering) return;
+    answering = false;
+
+    const q = currentQuestions[currentQ];
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.disabled = true);
+
+    if(selected === q.c) {
+        soundCorrect();
+        btns[selected].classList.add('correct');
+        const prizeMap = [100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000];
+        score = prizeMap[currentQ];
+        document.getElementById('scoreDisplay').textContent = `$${score.toLocaleString()}`;
+
+        if(currentQ === 14) {
+            setTimeout(() => endGame(true), 1000);
+        } else {
+            setTimeout(() => { currentQ++; showQuestion(); }, 1200);
+        }
+    } else {
+        soundWrong();
+        btns[selected].classList.add('wrong');
+        btns[q.c].classList.add('correct');
+
+        let safeScore = 0;
+        for(let i=currentQ-1; i>=0; i--) {
+            if(MILESTONES.includes(i)) {
+                safeScore = [100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000][i];
+                break;
+            }
+        }
+        score = safeScore;
+        setTimeout(() => { endGame(false); }, 2000);
+    }
+}
+
+function useFifty() {
+    if(fiftyUsed || !answering) return;
+    soundLifeline();
+    fiftyUsed = true;
+    document.getElementById('fiftyBtn').classList.add('used');
+
+    const q = currentQuestions[currentQ];
+    let wrongs = q.o.map((_,i) => i).filter(i => i !== q.c);
+    shuffle(wrongs);
+    const toRemove = wrongs.slice(0, 2);
+    toRemove.forEach(i => {
+        const btn = document.getElementById(`opt${i}`);
+        if(btn) btn.style.opacity = '0.3';
+    });
+}
+
+function usePhone() {
+    if(phoneUsed || !answering) return;
+    soundLifeline();
+    phoneUsed = true;
+    document.getElementById('phoneBtn').classList.add('used');
+
+    const q = currentQuestions[currentQ];
+    const giveCorrect = Math.random() < 0.7;
+    const hint = giveCorrect ? q.o[q.c] : q.o[(q.c + 1 + Math.floor(Math.random()*3)) % 4];
+    showModal('📞 ¡Timbre!', `Tu amigo seriéfilo dice:<br><br>"Mirá, estoy casi seguro que es... <b>${hint}</b>"`);
+}
+
+function useAudience() {
+    if(audienceUsed || !answering) return;
+    soundLifeline();
+    audienceUsed = true;
+    document.getElementById('audienceBtn').classList.add('used');
+
+    const q = currentQuestions[currentQ];
+    const correctPct = 55 + Math.floor(Math.random() * 35);
+    let remaining = 100 - correctPct;
+    let dist = [];
+    for(let i=0; i<4; i++) {
+        if(i === q.c) { dist.push(correctPct); }
+        else {
+            let p = Math.floor(remaining / (3 - dist.filter((_,j)=>j!==q.c).length));
+            dist.push(p);
+            remaining -= p;
+        }
+    }
+    const letters = ['A','B','C','D'];
+    const barsHtml = q.o.map((o,i) => `
+        <div class="modal-bar-row">
+            <span class="modal-bar-label">${letters[i]}</span>
+            <div class="modal-bar-track"><div class="modal-bar-fill" style="width:${dist[i]}%"></div></div>
+            <span>${dist[i]}%</span>
+        </div>`).join('');
+    showModal('👥 El público votó', barsHtml);
+}
+
+function endGame(won) {
+    if(won) { soundWin(); } else { soundLose(); }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('resultScreen').classList.add('active');
+
+    if(won) {
+        document.getElementById('resultIcon').textContent = '🏆';
+        document.getElementById('resultTitle').textContent = '¡FELICIDADES!';
+        document.getElementById('resultSubtitle').textContent = '¡Te convertiste en el Millonario de las Series!';
+    } else {
+        document.getElementById('resultIcon').textContent = '💔';
+        document.getElementById('resultTitle').textContent = '¡Fallaste!';
+        document.getElementById('resultSubtitle').textContent = 'Te llevás un premio seguro:';
+    }
+    document.getElementById('finalScore').textContent = `$${score.toLocaleString()}`;
+    document.getElementById('resultDetail').textContent = `Respondiste ${currentQ + (won?1:0)} preguntas`;
+}
+
+showMenu();
+
+}catch(e){
+ document.body.innerHTML="<div style='padding:40px;color:red'>Error: "+e.message+"</div>";
+}</script>
+</body>
+</html>
