@@ -577,6 +577,7 @@ let currentQuestions = [];
 let currentQ = 0;
 let score = 0;
 let category = 'all';
+let currentTopicLabel = null;
 let fiftyUsed = false;
 let phoneUsed = false;
 let audienceUsed = false;
@@ -703,7 +704,7 @@ window.searchCustomGame = async function searchCustomGame() {
         const res = await fetch(CUSTOM_API_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({game: gameName})
+            body: JSON.stringify({game: gameName, grounded: true})
         });
         if(!res.ok) throw new Error('Servidor respondió ' + res.status);
         const data = await res.json();
@@ -713,7 +714,7 @@ window.searchCustomGame = async function searchCustomGame() {
         statusEl.textContent = `✅ ${data.questions.length} preguntas listas sobre ${data.game}!`;
         setTimeout(() => {
             btn.disabled = false;
-            beginGame(shuffle([...data.questions]).slice(0, 15));
+            beginGame(shuffle([...data.questions]).slice(0, 15), data.game);
         }, 700);
     } catch(e) {
         const btn = document.getElementById('customSearchBtn');
@@ -765,7 +766,7 @@ window.generateFreshGenre = async function generateFreshGenre() {
         statusEl.style.color = '#00e676';
         statusEl.textContent = `✅ ${data.questions.length} preguntas nuevas listas!`;
         setTimeout(() => {
-            beginGame(shuffle([...data.questions]).slice(0, 15));
+            beginGame(shuffle([...data.questions]).slice(0, 15), data.game);
         }, 700);
     } catch(e) {
         const statusEl = document.getElementById('catStatus');
@@ -797,8 +798,9 @@ function buildPrizeLadder() {
     document.getElementById('prizeLadder').innerHTML = html;
 }
 
-function beginGame(questionsArray) {
+function beginGame(questionsArray, topicLabel) {
     currentQuestions = questionsArray;
+    currentTopicLabel = topicLabel || null;
     currentQ = 0;
     score = 0;
     fiftyUsed = false;
@@ -832,7 +834,7 @@ function showQuestion() {
     document.getElementById('questionText').textContent = q.q;
 
     const cats = {accion:'Acción',infantil:'Infantil',terror:'Terror',anime:'Anime',comedia:'Comedia',drama:'Drama',dorama:'Dorama',documentales:'Documentales',cristianas:'Cristianas',mas_vistas:'Más Vistas',all:'Mixto'};
-    document.getElementById('categoryDisplay').textContent = `📂 ${cats[q.cat] || 'Mixto'}`;
+    document.getElementById('categoryDisplay').textContent = currentTopicLabel ? `🔍 Sobre: ${currentTopicLabel}` : `📂 ${cats[q.cat] || 'Mixto'}`;
 
     const container = document.getElementById('optionsContainer');
     container.innerHTML = '';
