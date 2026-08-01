@@ -181,6 +181,7 @@ body {
     <button class="btn btn-play" onclick="showCategories()">🎯 JUGAR</button>
     <button class="btn btn-categories" onclick="showCategories()">📂 CATEGORÍAS</button>
     <button class="btn" style="background:linear-gradient(135deg,#00c9a7,#0089ba);color:white" onclick="showCustomGame()">🤖 BUSCAR SERIE (IA)</button>
+    <button class="btn" style="background:linear-gradient(135deg,#f5a623,#f76b1c);color:white" onclick="showLeaderboard()">🏆 RANKING</button>
 </div>
 
 <!-- CATEGORIES -->
@@ -245,9 +246,24 @@ body {
     <p id="resultSubtitle">Ganaste:</p>
     <div class="final-score" id="finalScore">$1.000.000</div>
     <p id="resultDetail"></p>
+    <div id="submitScoreBox" style="margin:15px 0">
+        <input type="text" id="usernameInput" placeholder="Tu nombre"
+            style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;font-size:1em;margin-bottom:10px;text-align:center;box-sizing:border-box">
+        <button class="btn" style="background:linear-gradient(135deg,#f5a623,#f76b1c);color:white" onclick="submitScore()">🏆 ENVIAR AL RANKING</button>
+        <div id="submitStatus" style="color:#ffd700;margin-top:8px;font-size:0.85em;min-height:18px"></div>
+    </div>
     <button class="btn btn-play" onclick="showMenu()">🔄 JUGAR DE NUEVO</button>
 </div>
 
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboardScreen" class="screen">
+    <div class="menu-screen" style="padding-top:20px">
+        <h2 style="color:white;margin-bottom:15px;font-size:1.2em">🏆 RANKING GLOBAL</h2>
+        <div id="leaderboardList" style="text-align:left;margin-bottom:15px;max-height:60vh;overflow-y:auto"></div>
+        <button class="btn btn-categories" onclick="showMenu()" style="background:#333">↩ VOLVER</button>
+    </div>
 </div>
 
 <!-- MODAL (reemplaza alert(), que el WebView no muestra) -->
@@ -781,6 +797,68 @@ window.generateFreshGenre = async function generateFreshGenre() {
 }
 // ===== FIN GENERAR MAS PREGUNTAS =====
 
+// ===== RANKING GLOBAL =====
+const LEADERBOARD_API_URL = 'https://seriesquiz-api.charly-tricks.dev/api/leaderboard';
+
+function showLeaderboard() {
+    soundClick();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('leaderboardScreen').classList.add('active');
+    loadLeaderboard();
+}
+
+window.loadLeaderboard = async function loadLeaderboard() {
+    const listEl = document.getElementById('leaderboardList');
+    listEl.innerHTML = '<p style="color:#888;text-align:center">Cargando...</p>';
+    try {
+        const res = await fetch(LEADERBOARD_API_URL);
+        const data = await res.json();
+        if (!data.leaderboard || data.leaderboard.length === 0) {
+            listEl.innerHTML = '<p style="color:#888;text-align:center">Todavía no hay puntajes. ¡Sé el primero!</p>';
+            return;
+        }
+        const medals = ['🥇','🥈','🥉'];
+        listEl.innerHTML = data.leaderboard.map((e, i) => `
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:10px;align-items:center">
+                <span style="color:white">${medals[i] || (i+1)+'.'} ${e.username}</span>
+                <span style="color:#00e5ff;font-family:'Courier New',monospace;font-weight:bold">$${e.score.toLocaleString()}</span>
+            </div>
+        `).join('');
+    } catch(e) {
+        listEl.innerHTML = '<p style="color:#ff6b6b;text-align:center">No se pudo cargar el ranking</p>';
+    }
+}
+
+window.submitScore = async function submitScore() {
+    const input = document.getElementById('usernameInput');
+    const statusEl = document.getElementById('submitStatus');
+    const username = input.value.trim();
+    if (!username) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Escribí tu nombre primero';
+        return;
+    }
+    try { localStorage.setItem('seriesquiz_username', username); } catch(e) {}
+
+    soundClick();
+    statusEl.style.color = '#ffd700';
+    statusEl.textContent = 'Enviando...';
+    try {
+        const res = await fetch(LEADERBOARD_API_URL + '/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, score: score, category: category})
+        });
+        if (!res.ok) throw new Error('Error del servidor');
+        statusEl.style.color = '#00e676';
+        statusEl.textContent = '✅ ¡Puntaje enviado!';
+    } catch(e) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = '❌ No se pudo enviar';
+    }
+}
+// ===== FIN RANKING GLOBAL =====
+
 function selectCategory(cat, el) {
     soundClick();
     category = cat;
@@ -962,6 +1040,18 @@ function endGame(won) {
     }
     document.getElementById('finalScore').textContent = `$${score.toLocaleString()}`;
     document.getElementById('resultDetail').textContent = `Respondiste ${currentQ + (won?1:0)} preguntas`;
+
+    const submitBox = document.getElementById('submitScoreBox');
+    if (score > 0) {
+        submitBox.style.display = 'block';
+        document.getElementById('submitStatus').textContent = '';
+        try {
+            const savedName = localStorage.getItem('seriesquiz_username');
+            if (savedName) document.getElementById('usernameInput').value = savedName;
+        } catch(e) {}
+    } else {
+        submitBox.style.display = 'none';
+    }
 }
 
 showMenu();
