@@ -18,6 +18,9 @@ import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.LeaderboardsClient;
 import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
+import com.google.android.play.core.integrity.IntegrityManager;
+import com.google.android.play.core.integrity.IntegrityManagerFactory;
+import com.google.android.play.core.integrity.IntegrityTokenRequest;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -36,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
 
         PlayGamesSdk.initialize(this);
         attemptPlayGamesSignIn();
+        checkAppIntegrity();
 
         MobileAds.initialize(this, initializationStatus -> {});
         loadInterstitialAd();
@@ -82,6 +86,50 @@ public class MainActivity extends AppCompatActivity {
     private void attemptPlayGamesSignIn() {
         GamesSignInClient signInClient = PlayGames.getGamesSignInClient(this);
         signInClient.signIn();
+    }
+
+    private void checkAppIntegrity() {
+        try {
+            IntegrityManager integrityManager = IntegrityManagerFactory.create(this);
+            byte[] nonceBytes = new byte[16];
+            new java.security.SecureRandom().nextBytes(nonceBytes);
+            String nonce = android.util.Base64.encodeToString(nonceBytes,
+                android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.NO_PADDING);
+
+            IntegrityTokenRequest request = IntegrityTokenRequest.builder()
+                .setNonce(nonce)
+                .setCloudProjectNumber(930973912156L)
+                .build();
+
+            integrityManager.requestIntegrityToken(request)
+                .addOnSuccessListener(response -> sendIntegrityTokenToBackend(response.token()))
+                .addOnFailureListener(e -> android.util.Log.w("PlayIntegrity", "No se pudo obtener el token", e));
+        } catch (Exception e) {
+            android.util.Log.w("PlayIntegrity", "Error iniciando chequeo de integridad", e);
+        }
+    }
+
+    private void sendIntegrityTokenToBackend(String token) {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("https://seriesquiz-api.charly-tricks.dev/api/verify-integrity");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setDoOutput(true);
+                String body = "{\"token\":\"" + token + "\"}";
+                conn.getOutputStream().write(body.getBytes("UTF-8"));
+                int code = conn.getResponseCode();
+                java.io.InputStream is = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
+                java.util.Scanner scanner = new java.util.Scanner(is, "UTF-8").useDelimiter("\\A");
+                String responseBody = scanner.hasNext() ? scanner.next() : "";
+                android.util.Log.d("PlayIntegrity", "Verificacion (" + code + "): " + responseBody);
+            } catch (Exception e) {
+                android.util.Log.w("PlayIntegrity", "No se pudo verificar con el backend", e);
+            }
+        }).start();
     }
 
     private void loadInterstitialAd() {
