@@ -29,4 +29,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.webkit:webkit:1.9.0")
     implementation("com.google.android.gms:play-services-ads:23.0.0")
+    implementation("com.google.android.gms:play-services-games-v2:20.1.2")
 }

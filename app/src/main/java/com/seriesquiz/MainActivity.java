@@ -14,12 +14,17 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.games.GamesSignInClient;
+import com.google.android.gms.games.LeaderboardsClient;
+import com.google.android.gms.games.PlayGames;
+import com.google.android.gms.games.PlayGamesSdk;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity {
     private static final String AD_UNIT_ID = "ca-app-pub-4478373683231277/6306006128";
+    private static final String LEADERBOARD_ID = "CgkI3Jj6kowbEAIQAQ";
     private WebView webView;
     private InterstitialAd interstitialAd;
     private boolean showAdOnFirstLoad = true;
@@ -28,6 +33,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        PlayGamesSdk.initialize(this);
+        attemptPlayGamesSignIn();
 
         MobileAds.initialize(this, initializationStatus -> {});
         loadInterstitialAd();
@@ -69,6 +77,11 @@ public class MainActivity extends AppCompatActivity {
             String err = e.getMessage() != null ? e.getMessage() : "Unknown error";
             webView.loadData("<html><body style='background:#12071f;color:white;padding:40px;text-align:center;font-size:18px'><h2>Error</h2><p>" + err + "</p></body></html>", "text/html", "UTF-8");
         }
+    }
+
+    private void attemptPlayGamesSignIn() {
+        GamesSignInClient signInClient = PlayGames.getGamesSignInClient(this);
+        signInClient.signIn();
     }
 
     private void loadInterstitialAd() {
@@ -121,6 +134,45 @@ public class MainActivity extends AppCompatActivity {
                 shareIntent.setType("text/plain");
                 shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, text);
                 startActivity(android.content.Intent.createChooser(shareIntent, "Compartir puntaje"));
+            });
+        }
+
+        @JavascriptInterface
+        public void checkPlayGamesSignedIn(final String jsCallback) {
+            runOnUiThread(() -> {
+                GamesSignInClient client = PlayGames.getGamesSignInClient(MainActivity.this);
+                client.isAuthenticated().addOnCompleteListener(task -> {
+                    boolean isAuth = task.isSuccessful() && task.getResult().isAuthenticated();
+                    webView.evaluateJavascript(jsCallback + "(" + isAuth + ")", null);
+                });
+            });
+        }
+
+        @JavascriptInterface
+        public void playGamesSignIn() {
+            runOnUiThread(() -> {
+                GamesSignInClient client = PlayGames.getGamesSignInClient(MainActivity.this);
+                client.signIn();
+            });
+        }
+
+        @JavascriptInterface
+        public void submitToPlayGamesLeaderboard(long score) {
+            runOnUiThread(() -> {
+                LeaderboardsClient client = PlayGames.getLeaderboardsClient(MainActivity.this);
+                client.submitScore(LEADERBOARD_ID, score);
+            });
+        }
+
+        @JavascriptInterface
+        public void showPlayGamesLeaderboard() {
+            runOnUiThread(() -> {
+                LeaderboardsClient client = PlayGames.getLeaderboardsClient(MainActivity.this);
+                client.getLeaderboardIntent(LEADERBOARD_ID)
+                    .addOnSuccessListener(intent -> startActivityForResult(intent, 9004))
+                    .addOnFailureListener(e ->
+                        webView.evaluateJavascript("showModal('🎮 Google Play Games','Inicia sesi\\u00f3n con tu cuenta de Google primero.')", null)
+                    );
             });
         }
     }

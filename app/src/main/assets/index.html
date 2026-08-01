@@ -250,6 +250,7 @@ body {
         <input type="text" id="usernameInput" placeholder="Tu nombre"
             style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;font-size:1em;margin-bottom:10px;text-align:center;box-sizing:border-box">
         <button class="btn" style="background:linear-gradient(135deg,#f5a623,#f76b1c);color:white" onclick="submitScore()">🏆 ENVIAR AL RANKING</button>
+        <button class="btn" style="background:linear-gradient(135deg,#4285F4,#34A853);color:white" onclick="submitToPlayGames()">🎮 ENVIAR A GOOGLE PLAY</button>
         <div id="submitStatus" style="color:#ffd700;margin-top:8px;font-size:0.85em;min-height:18px"></div>
     </div>
     <button class="btn btn-play" onclick="showMenu()">🔄 JUGAR DE NUEVO</button>
@@ -261,6 +262,7 @@ body {
     <div class="menu-screen" style="padding-top:20px">
         <h2 style="color:white;margin-bottom:15px;font-size:1.2em">🏆 RANKING GLOBAL</h2>
         <div id="leaderboardList" style="text-align:left;margin-bottom:15px;max-height:60vh;overflow-y:auto"></div>
+        <button class="btn" style="background:linear-gradient(135deg,#4285F4,#34A853);color:white" onclick="showGooglePlayLeaderboard()">🎮 RANKING DE GOOGLE PLAY</button>
         <button class="btn btn-categories" onclick="showMenu()" style="background:#333">↩ VOLVER</button>
     </div>
 </div>
@@ -868,6 +870,29 @@ function shareMyScore() {
         window.Android.shareScore(message);
     } else {
         showModal('📤 Compartir', 'No se pudo abrir el menú de compartir en este dispositivo.');
+    }
+}
+
+function submitToPlayGames() {
+    soundClick();
+    const statusEl = document.getElementById('submitStatus');
+    if (window.Android && window.Android.submitToPlayGamesLeaderboard) {
+        window.Android.submitToPlayGamesLeaderboard(score);
+        if (statusEl) {
+            statusEl.style.color = '#00e676';
+            statusEl.textContent = '✅ Enviado a Google Play Games';
+        }
+    } else {
+        showModal('🎮 Google Play Games', 'No disponible en este dispositivo.');
+    }
+}
+
+function showGooglePlayLeaderboard() {
+    soundClick();
+    if (window.Android && window.Android.showPlayGamesLeaderboard) {
+        window.Android.showPlayGamesLeaderboard();
+    } else {
+        showModal('🎮 Google Play Games', 'No disponible en este dispositivo.');
     }
 }
 
