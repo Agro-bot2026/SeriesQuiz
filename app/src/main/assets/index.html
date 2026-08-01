@@ -697,6 +697,7 @@ window.searchCustomGame = async function searchCustomGame() {
         }
 
         soundClick();
+        if (window.Android && window.Android.showAd) { window.Android.showAd(); }
         btn.disabled = true;
         statusEl.style.color = '#00e5ff';
         statusEl.textContent = '⏳ Generando 30 preguntas... (puede tardar unos segundos)';
@@ -751,6 +752,7 @@ window.generateFreshGenre = async function generateFreshGenre() {
         const topic = base + ' (v' + Math.floor(Math.random()*100000) + ')';
 
         soundClick();
+        if (window.Android && window.Android.showAd) { window.Android.showAd(); }
         statusEl.style.color = '#00e5ff';
         statusEl.textContent = '⏳ Generando 30 preguntas nuevas... (puede tardar 20-40 segundos)';
 
