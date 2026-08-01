@@ -748,7 +748,7 @@ window.generateFreshGenre = async function generateFreshGenre() {
     try {
         const statusEl = document.getElementById('catStatus');
         const base = CATEGORY_TOPICS[category] || CATEGORY_TOPICS['all'];
-        const topic = base + ' (tanda alternativa ' + Math.floor(Math.random()*100000) + ')';
+        const topic = base + ' (v' + Math.floor(Math.random()*100000) + ')';
 
         soundClick();
         statusEl.style.color = '#00e5ff';
