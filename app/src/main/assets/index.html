@@ -76,15 +76,18 @@ body {
 .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cat-btn {
     padding: 20px 10px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px;
-    background: rgba(255,255,255,0.05); color: white; text-align: center;
-    cursor: pointer; transition: all 0.3s; font-size: 0.9em;
+    background: rgba(255,255,255,0.05); background-size: cover; background-position: center;
+    color: white; text-align: center; cursor: pointer; transition: all 0.3s; font-size: 0.9em;
+    min-height: 80px; display: flex; align-items: center; justify-content: center;
 }
-.cat-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+.cat-btn:hover { transform: scale(1.05); }
 .cat-btn:active { transform: scale(0.95); }
-.cat-btn .emoji { font-size: 2em; display: block; margin-bottom: 5px; }
+.cat-btn .cat-label {
+    font-weight: bold; font-size: 1.05em; text-shadow: 0 2px 8px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.9);
+}
+.cat-btn .emoji { font-size: 2em; display: block; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
 .cat-btn.selected {
-    border-color: #00e5ff;
-    background: linear-gradient(135deg, rgba(0,229,255,0.2), rgba(124,77,255,0.2));
+    border-color: #00e5ff; box-shadow: 0 0 0 2px rgba(0,229,255,0.4) inset;
 }
 
 .game-header {
@@ -189,17 +192,17 @@ body {
     <div class="menu-screen" style="padding-top:20px">
         <h2 style="color:white;margin-bottom:15px;font-size:1.2em">ELEGÍ TU CATEGORÍA</h2>
         <div class="category-grid">
-            <div class="cat-btn selected" data-cat="all" onclick="selectCategory('all',this)"><span class="emoji">📺</span> Todas</div>
-            <div class="cat-btn" data-cat="accion" onclick="selectCategory('accion',this)"><span class="emoji">🔫</span> Acción</div>
-            <div class="cat-btn" data-cat="infantil" onclick="selectCategory('infantil',this)"><span class="emoji">🧸</span> Infantil</div>
-            <div class="cat-btn" data-cat="terror" onclick="selectCategory('terror',this)"><span class="emoji">👻</span> Terror</div>
-            <div class="cat-btn" data-cat="anime" onclick="selectCategory('anime',this)"><span class="emoji">🎌</span> Anime</div>
-            <div class="cat-btn" data-cat="comedia" onclick="selectCategory('comedia',this)"><span class="emoji">😂</span> Comedia</div>
-            <div class="cat-btn" data-cat="drama" onclick="selectCategory('drama',this)"><span class="emoji">🎭</span> Drama</div>
-            <div class="cat-btn" data-cat="dorama" onclick="selectCategory('dorama',this)"><span class="emoji">🇰🇷</span> Dorama</div>
-            <div class="cat-btn" data-cat="documentales" onclick="selectCategory('documentales',this)"><span class="emoji">🎥</span> Documentales</div>
-            <div class="cat-btn" data-cat="cristianas" onclick="selectCategory('cristianas',this)"><span class="emoji">✝️</span> Cristianas</div>
-            <div class="cat-btn" data-cat="mas_vistas" onclick="selectCategory('mas_vistas',this)"><span class="emoji">🔥</span> Más Vistas</div>
+            <div class="cat-btn selected" data-cat="all" onclick="selectCategory('all',this)" style="background:linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15))"><span class="emoji">📺</span><span class="cat-label">Todas</span></div>
+            <div class="cat-btn" data-cat="accion" onclick="selectCategory('accion',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/577eXC8wFQT0eUrJcgznSiFPRmk.jpg')"><span class="cat-label">🔫 Acción</span></div>
+            <div class="cat-btn" data-cat="infantil" onclick="selectCategory('infantil',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/lH22EnM0ofC7GsVGU8dAA2RXV1c.jpg')"><span class="cat-label">🧸 Infantil</span></div>
+            <div class="cat-btn" data-cat="terror" onclick="selectCategory('terror',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/6fQSEUfV3eDUS5AGhwJK8CAWt0b.jpg')"><span class="cat-label">👻 Terror</span></div>
+            <div class="cat-btn" data-cat="anime" onclick="selectCategory('anime',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg')"><span class="cat-label">🎌 Anime</span></div>
+            <div class="cat-btn" data-cat="comedia" onclick="selectCategory('comedia',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/mLyW3UTgi2lsMdtueYODcfAB9Ku.jpg')"><span class="cat-label">😂 Comedia</span></div>
+            <div class="cat-btn" data-cat="drama" onclick="selectCategory('drama',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg')"><span class="cat-label">🎭 Drama</span></div>
+            <div class="cat-btn" data-cat="dorama" onclick="selectCategory('dorama',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/3yEHM2HT2vrUtO93YzTJNgEfiZG.jpg')"><span class="cat-label">🇰🇷 Dorama</span></div>
+            <div class="cat-btn" data-cat="documentales" onclick="selectCategory('documentales',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/gJZ20Zn9UmZA4NZHd9JQMJ6spPP.jpg')"><span class="cat-label">🎥 Documentales</span></div>
+            <div class="cat-btn" data-cat="cristianas" onclick="selectCategory('cristianas',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/3siv3RaQrdr2tQiv9jHq71sLlzo.jpg')"><span class="cat-label">✝️ Cristianas</span></div>
+            <div class="cat-btn" data-cat="mas_vistas" onclick="selectCategory('mas_vistas',this)" style="background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.65)), url('https://image.tmdb.org/t/p/w780/56v2KjBlU4XaOv9rVYEQypROD7P.jpg')"><span class="cat-label">🔥 Más Vistas</span></div>
         </div>
         <button class="btn btn-play" onclick="startGame()" style="margin-top:15px">✅ EMPEZAR</button>
         <button class="btn" style="background:linear-gradient(135deg,#00c9a7,#0089ba);color:white" onclick="generateFreshGenre()">🎲 GENERAR 30 NUEVAS (IA)</button>
@@ -232,6 +235,11 @@ body {
     <div id="categoryDisplay" style="color:#888;font-size:0.85em;text-align:center;margin-bottom:8px"></div>
     <div class="question-box"><p id="questionText">Cargando...</p></div>
     <div class="options-grid" id="optionsContainer"></div>
+    <div id="explanationBox" style="display:none;background:rgba(255,255,255,0.06);border:1px solid rgba(0,229,255,0.3);border-radius:12px;padding:15px;margin-top:10px">
+        <div id="explanationLabel" style="font-weight:bold;margin-bottom:6px;font-size:1em"></div>
+        <p id="explanationText" style="color:#ccc;font-size:0.9em;line-height:1.4;margin-bottom:12px"></p>
+        <button class="btn btn-play" id="nextQuestionBtn" style="margin:0;padding:12px">SIGUIENTE ➡️</button>
+    </div>
     <div class="lifelines">
         <button class="lifeline-btn" id="fiftyBtn" onclick="useFifty()">50/50</button>
         <button class="lifeline-btn" id="phoneBtn" onclick="usePhone()">📞 Llamada</button>
@@ -945,6 +953,7 @@ function showQuestion() {
     if(currentQ >= 15) { endGame(true); return; }
     const q = currentQuestions[currentQ];
     answering = true;
+    document.getElementById('explanationBox').style.display = 'none';
 
     document.getElementById('questionNum').textContent = `Pregunta ${currentQ+1}/15`;
     document.getElementById('scoreDisplay').textContent = score > 0 ? `$${score.toLocaleString()}` : '$0';
@@ -976,18 +985,14 @@ function answerQuestion(selected) {
     const btns = document.querySelectorAll('.option-btn');
     btns.forEach(b => b.disabled = true);
 
-    if(selected === q.c) {
+    let wasCorrect = (selected === q.c);
+
+    if(wasCorrect) {
         soundCorrect();
         btns[selected].classList.add('correct');
         const prizeMap = [100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000];
         score = prizeMap[currentQ];
         document.getElementById('scoreDisplay').textContent = `$${score.toLocaleString()}`;
-
-        if(currentQ === 14) {
-            setTimeout(() => endGame(true), 1000);
-        } else {
-            setTimeout(() => { currentQ++; showQuestion(); }, 1200);
-        }
     } else {
         soundWrong();
         btns[selected].classList.add('wrong');
@@ -1001,8 +1006,37 @@ function answerQuestion(selected) {
             }
         }
         score = safeScore;
-        setTimeout(() => { endGame(false); }, 2000);
     }
+
+    showExplanationBox(q, wasCorrect);
+}
+
+function showExplanationBox(q, wasCorrect) {
+    const box = document.getElementById('explanationBox');
+    const text = document.getElementById('explanationText');
+    const label = document.getElementById('explanationLabel');
+
+    label.textContent = wasCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto';
+    label.style.color = wasCorrect ? '#00e676' : '#ff1744';
+
+    if (q.e && q.e.trim()) {
+        text.textContent = q.e;
+        text.style.display = 'block';
+    } else {
+        text.style.display = 'none';
+    }
+    box.style.display = 'block';
+
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    nextBtn.textContent = wasCorrect && currentQ === 14 ? '🏆 VER RESULTADO' : (wasCorrect ? 'SIGUIENTE ➡️' : '🏆 VER RESULTADO');
+    nextBtn.onclick = () => {
+        soundClick();
+        box.style.display = 'none';
+        if(!wasCorrect) { endGame(false); return; }
+        if(currentQ === 14) { endGame(true); return; }
+        currentQ++;
+        showQuestion();
+    };
 }
 
 function useFifty() {
