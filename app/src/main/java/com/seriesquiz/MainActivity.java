@@ -113,6 +113,16 @@ public class MainActivity extends AppCompatActivity {
         public void showAd() {
             runOnUiThread(() -> showInterstitialIfReady());
         }
+
+        @JavascriptInterface
+        public void shareScore(String text) {
+            runOnUiThread(() -> {
+                android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                shareIntent.setType("text/plain");
+                shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, text);
+                startActivity(android.content.Intent.createChooser(shareIntent, "Compartir puntaje"));
+            });
+        }
     }
 
     @Override

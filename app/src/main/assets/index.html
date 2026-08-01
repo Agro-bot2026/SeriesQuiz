@@ -253,6 +253,7 @@ body {
         <div id="submitStatus" style="color:#ffd700;margin-top:8px;font-size:0.85em;min-height:18px"></div>
     </div>
     <button class="btn btn-play" onclick="showMenu()">🔄 JUGAR DE NUEVO</button>
+    <button class="btn btn-categories" onclick="shareMyScore()">📤 COMPARTIR</button>
 </div>
 
 <!-- LEADERBOARD -->
@@ -858,6 +859,17 @@ window.submitScore = async function submitScore() {
     }
 }
 // ===== FIN RANKING GLOBAL =====
+
+function shareMyScore() {
+    soundClick();
+    const finalScoreText = document.getElementById('finalScore').textContent;
+    const message = `🎬 ¡Saqué ${finalScoreText} en SeriesQuiz! 🏆\n¿Te animás a superarme? 🔥`;
+    if (window.Android && window.Android.shareScore) {
+        window.Android.shareScore(message);
+    } else {
+        showModal('📤 Compartir', 'No se pudo abrir el menú de compartir en este dispositivo.');
+    }
+}
 
 function selectCategory(cat, el) {
     soundClick();
